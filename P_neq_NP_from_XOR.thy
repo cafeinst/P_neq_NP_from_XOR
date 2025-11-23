@@ -15,10 +15,12 @@ text ‹
 
     • If @{term "SUBSETSUM_lang enc0 ∈ 𝒫"}, then there exists a
       Cook–Levin machine @{term M} with some CL encoding @{term enc_CL}
-      such that:
-          – @{term "CL_SubsetSum_Solver M q0 enc_CL"} holds,
-          – @{term "polytime_CL_machine M enc_CL"} holds,
-          – @{term "LR_Read_TM M q0 enc_CL"} holds.
+      and an equation-based solver structure
+      (@{locale Eq_ReadLR_SubsetSum_Solver}), such that the machine runs
+      in polynomial time,
+
+    • Any such equation-based, polynomial-time solver satisfies the
+      LR-Read structural property (@{locale LR_Read_TM}).
 
   Under these assumptions we derive @{term "¬ P_eq_NP"}.
 ›
@@ -27,31 +29,34 @@ locale Global_LR_Assumptions =
   fixes enc0 :: "int list ⇒ int ⇒ string"   (* NP-side SUBSET-SUM encoding *)
   assumes SUBSETSUM_in_NP_global:
     "SUBSETSUM_lang enc0 ∈ 𝒩𝒫"
-  assumes P_impl_LR_CL_global:
+  (* P ⇒ existence of an equation-based, polytime SUBSET-SUM solver *)
+  assumes P_impl_eq_readlr_CL_global:
     "SUBSETSUM_lang enc0 ∈ 𝒫 ⟹
-       ∃M q0 enc_CL.
-         CL_SubsetSum_Solver M q0 enc_CL ∧
-         polytime_CL_machine M enc_CL ∧
-         LR_Read_TM M q0 enc_CL"
+       ∃M q0 enc_CL lhs rhs L_zone R_zone.
+         Eq_ReadLR_SubsetSum_Solver M q0 enc_CL lhs rhs L_zone R_zone ∧
+         polytime_CL_machine M enc_CL"
+  (* Bridge: any such solver satisfies the LR_Read_TM structural axiom *)
+  assumes eq_to_LR_Read_TM_global:
+    "⋀M q0 enc_CL lhs rhs L_zone R_zone.
+       Eq_ReadLR_SubsetSum_Solver M q0 enc_CL lhs rhs L_zone R_zone ⟹
+       polytime_CL_machine M enc_CL ⟹
+       LR_Read_TM M q0 enc_CL"
 
 context Global_LR_Assumptions
 begin
 
 lemma no_polytime_LR_CL:
   shows "¬ (∃M q0 enc_CL.
-             CL_SubsetSum_Solver M q0 enc_CL ∧
              polytime_CL_machine M enc_CL ∧
              LR_Read_TM M q0 enc_CL)"
 proof
   assume ex:
     "∃M q0 enc_CL.
-       CL_SubsetSum_Solver M q0 enc_CL ∧
        polytime_CL_machine M enc_CL ∧
        LR_Read_TM M q0 enc_CL"
   then obtain M q0 enc_CL where
-    solver: "CL_SubsetSum_Solver M q0 enc_CL" and
-    poly:   "polytime_CL_machine M enc_CL" and
-    lr:     "LR_Read_TM M q0 enc_CL"
+    poly: "polytime_CL_machine M enc_CL" and
+    lr:   "LR_Read_TM M q0 enc_CL"
     by blast
 
   interpret LR: LR_Read_TM M q0 enc_CL
@@ -84,21 +89,23 @@ proof
     using eq SUBSETSUM_in_NP_global
     unfolding P_eq_NP_def by metis
 
-  (* By the modelling assumption, this yields an LR_Read_TM-style CL solver. *)
-  from P_impl_LR_CL_global[OF inP_SUBSETSUM]
-  obtain M q0 enc_CL where
-    solver: "CL_SubsetSum_Solver M q0 enc_CL" and
-    poly:   "polytime_CL_machine M enc_CL" and
-    lr:     "LR_Read_TM M q0 enc_CL"
+  (* By the modelling assumption, this yields an equation-based, polytime CL solver. *)
+  from P_impl_eq_readlr_CL_global[OF inP_SUBSETSUM]
+  obtain M q0 enc_CL lhs rhs L_zone R_zone where
+    solver: "Eq_ReadLR_SubsetSum_Solver M q0 enc_CL lhs rhs L_zone R_zone" and
+    poly:   "polytime_CL_machine M enc_CL"
     by blast
+
+  (* Bridge: such a solver satisfies the LR_Read_TM structural axiom. *)
+  from eq_to_LR_Read_TM_global[OF solver poly]
+  have lr: "LR_Read_TM M q0 enc_CL" .
 
   (* Package it as a witness for the existential that no_polytime_LR_CL forbids. *)
   have ex_solver:
     "∃M q0 enc_CL.
-       CL_SubsetSum_Solver M q0 enc_CL ∧
        polytime_CL_machine M enc_CL ∧
        LR_Read_TM M q0 enc_CL"
-    using solver poly lr by blast
+    using poly lr by blast
 
   from no_polytime_LR_CL ex_solver
   show False by blast
