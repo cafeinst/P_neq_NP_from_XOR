@@ -1,19 +1,19 @@
-theory P_neq_NP_from_LR
+theory SubsetSum_PneqNP
   imports SubsetSum_CookLevin
 begin
 
-text ‹
+text \<open>
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                            %
-%                A CONDITIONAL PROOF THAT  P ≠ NP  FROM A                    %
+%                A CONDITIONAL PROOF THAT  P \<noteq> NP  FROM A                    %
 %           STRUCTURAL LR–READ ASSUMPTION ON SUBSET–SUM SOLVERS              %
 %                                                                            %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 This chapter presents the conceptual, mathematical, and philosophical
 background to the formalisation developed in the theory
-‹P_neq_NP_from_LR›.  The central goal is to explain—in clear,
+\<open>P_neq_NP_from_LR\<close>.  The central goal is to explain—in clear,
 non-technical language—the structure of the argument, which portions are
 fully formalised in Isabelle/HOL, and which portion is assumed as an
 axiom due to deep complexity-theoretic reasons.
@@ -23,7 +23,7 @@ a conditional statement of the following kind:
 
      *If every polynomial-time Turing machine that solves SUBSET-SUM
       satisfies a certain natural information-use property
-      (the LR–read property), then P ≠ NP.*
+      (the LR–read property), then P \<noteq> NP.*
 
 The information-use property in question has an intuitive
 computational meaning:
@@ -59,10 +59,10 @@ combinatorial structure: for a list of integers `as = [a₀, a₁, ..., aₙ₋�
 and target s, the question is whether one can choose a 0/1 vector `xs`
 such that
 
-          a₀·xs₀  +  ⋯  +  aₙ₋₁·xsₙ₋₁  =  s.
+          a₀\<sqdot>xs₀  +  \<cdots>  +  aₙ₋₁\<sqdot>xsₙ₋₁  =  s.
 
 The key combinatorial fact is that, for certain carefully chosen lists
-(as constructed in ‹SubsetSum_DecisionTree›), *all* 2ⁿ possible subset
+(as constructed in \<open>SubsetSum_DecisionTree\<close>), *all* 2ⁿ possible subset
 sums are distinct.  
 These are the **hard instances**: no two subsets have the same sum.
 
@@ -75,7 +75,7 @@ This observation forms the foundation for the adversary argument.
 -------------------------------------------------------------------------------
 
 In the decision-tree model (fully formalised in 
-‹SubsetSum_DecisionTree›), a computation is modelled as repeatedly
+\<open>SubsetSum_DecisionTree\<close>), a computation is modelled as repeatedly
 “reading” bits of the input until a unique answer is forced.
 
 The adversary argument goes as follows:
@@ -104,10 +104,10 @@ The adversary argument goes as follows:
   • The total number of reads is at least  
         2ᵏ + 2ⁿ⁻ᵏ,  
     which is minimised at k = n/2, giving  
-        2√(2ⁿ).
+        2\<surd>(2ⁿ).
 
 All of this—definitions, adversary construction, LHS/RHS sets,
-the √(2ⁿ) lower bound—is **fully formalised** in Isabelle/HOL.
+the \<surd>(2ⁿ) lower bound—is **fully formalised** in Isabelle/HOL.
 
 This is the “lower-bound kernel” around which the rest of the theory is
 built.
@@ -122,11 +122,11 @@ A Cook–Levin Turing machine is more flexible than a decision tree:
   • it may interleave, compress, or duplicate portions of the encoding.
 
 Thus, even though we have *proven* that any decision-tree needs at least
-2√(2ⁿ) reads, this does not automatically imply the same statement for
+2\<surd>(2ⁿ) reads, this does not automatically imply the same statement for
 Turing machines.
 
 The bridge between these models is encapsulated in the locale
-‹LR_Read_TM›, which formalises a simple requirement:
+\<open>LR_Read_TM\<close>, which formalises a simple requirement:
 
     **A solver for SUBSET-SUM must actually read information from both
        the region encoding the left side of the deciding equation
@@ -136,7 +136,7 @@ This assumption preserves enough structural information to carry the
 decision-tree adversary argument over to the Turing-machine setting.
 
 If every polynomial-time SUBSET-SUM solver satisfies this property, the
-√(2ⁿ) lower bound follows immediately.
+\<surd>(2ⁿ) lower bound follows immediately.
 
 -------------------------------------------------------------------------------
 4.  Why LR–Read is Assumed, Not Proven
@@ -154,7 +154,7 @@ must be “non-natural” or else it would contradict widely believed
 cryptographic assumptions.  
 The LR–read property is precisely such a “information-use” structural
 property; proving it for all polynomial-time Turing machines is expected
-to be as hard as proving P ≠ NP itself.
+to be as hard as proving P \<noteq> NP itself.
 
 (2)  *Encoding flexibility makes structural invariants unprovable.*
 
@@ -188,18 +188,18 @@ Given these barriers, the honest, transparent solution is:
 The Isabelle formalisation splits cleanly into three layers:
 
 (1) **Formal lower-bound kernel (fully proven)**  
-    From ‹SubsetSum_DecisionTree› and abstract reader assumptions,  
+    From \<open>SubsetSum_DecisionTree\<close> and abstract reader assumptions,  
     we prove:  
-         steps ≥ 2√(2^n).
+         steps \<ge> 2\<surd>(2^n).
 
 (2) **Cook–Levin bridge (mostly formal)**  
     We encode SUBSET-SUM as a CL Turing machine input,  
-    prove SUBSET-SUM ∈ NP,  
-    and define ‹LR_Read_TM› as the abstract Turing-machine analogue
+    prove SUBSET-SUM \<in> NP,  
+    and define \<open>LR_Read_TM\<close> as the abstract Turing-machine analogue
     of the reader model.
 
 (3) **One explicit modelling assumption (axiom)**  
-    If SUBSET-SUM ∈ P, then there exists a polynomial-time solver
+    If SUBSET-SUM \<in> P, then there exists a polynomial-time solver
     whose behaviour satisfies LR–read.
 
 This is the only place where we assume anything not formally justified.
@@ -207,13 +207,13 @@ Everything else is mechanised.
 
 Under this assumption, we obtain the main theorem:
 
-      **If SUBSET-SUM is solved in P, then P ≠ NP.**
+      **If SUBSET-SUM is solved in P, then P \<noteq> NP.**
 
 Equivalently:
 
       **If every polynomial-time SUBSET-SUM solver must read  
          at least one bit from L and at least one from R,  
-         then P ≠ NP.**
+         then P \<noteq> NP.**
 
 -------------------------------------------------------------------------------
 6.  Relationship to Feinstein (2016)
@@ -249,17 +249,17 @@ This is arguably more a law of computation than a theorem, and our
 formalisation shows how such a principle can be cleanly integrated into
 a rigorous mathematical framework.
 
-Importantly, *everything else*—including the √(2ⁿ) lower bound—is
+Importantly, *everything else*—including the \<surd>(2ⁿ) lower bound—is
 formalised and certified by Isabelle/HOL.
 
 -------------------------------------------------------------------------------
 8.  The Final Conditional Theorem
 -------------------------------------------------------------------------------
 
-The main theorem of ‹P_neq_NP_from_LR› is:
+The main theorem of \<open>P_neq_NP_from_LR\<close> is:
 
       **If every polynomial-time SUBSET-SUM solver satisfies LR–read,
-         then  P ≠ NP.**
+         then  P \<noteq> NP.**
 
 This shows that a very simple, very natural informational principle
 —one likely unprovable for deep reasons—bridges the gap between the
@@ -272,27 +272,27 @@ The contribution of this AFP entry is therefore twofold:
     of unproven assumptions), and
 
   • a transparent, honest top-level axiom that pinpoints exactly which
-    structural fact is needed to conclude P ≠ NP.
+    structural fact is needed to conclude P \<noteq> NP.
 
-This approach does not claim to *prove* P ≠ NP outright, but it provides
+This approach does not claim to *prove* P \<noteq> NP outright, but it provides
 a powerful blueprint:  
 **identify the minimal structural axiom needed, formalise everything
 around it, and expose precisely what remains to be shown.**
 
-›
+\<close>
 
 definition P_eq_NP :: bool where
-  "P_eq_NP ⟷ (∀L::language. (L ∈ 𝒫) = (L ∈ 𝒩𝒫))"
+  "P_eq_NP \<longleftrightarrow> (\<forall>L::language. (L \<in> \<P>) = (L \<in> \<N>\<P>))"
 
-text ‹
+text \<open>
   Global meta-assumptions wrapping the LR-read lower bound into a
-  conditional P ≠ NP statement, in the “equation-based” style.
+  conditional P \<noteq> NP statement, in the “equation-based” style.
 
   We fix an NP-side encoding {term enc0} for SUBSET-SUM and assume:
 
-    • "SUBSETSUM_lang enc0 ∈ 𝒩𝒫"  (NP membership),
+    • "SUBSETSUM_lang enc0 \<in> \<N>\<P>"  (NP membership),
 
-    • (Existence) If term "SUBSETSUM_lang enc0 ∈ 𝒫", then there exists
+    • (Existence) If term "SUBSETSUM_lang enc0 \<in> \<P>", then there exists
       a Cook–Levin machine term M with some CL encoding term enc
       and some equation data term lhs, term rhs, term L_zone,
       {term R_zone} such that
@@ -305,98 +305,98 @@ text ‹
 
     • (Bridge) Any such equation-based, polynomial-time solver can be
       refined to an LR_Read_TM instance (structural LR-read property),
-      which in turn inherits the √(2^n) lower bound from the decision-tree
+      which in turn inherits the \<surd>(2^n) lower bound from the decision-tree
       theory.
 
-  Under these assumptions we derive "¬ P_eq_NP".
-›
+  Under these assumptions we derive "\<not> P_eq_NP".
+\<close>
 
 locale Global_LR_Assumptions =
-  fixes enc0 :: "int list ⇒ int ⇒ string"   (* NP-side SUBSET-SUM encoding *)
+  fixes enc0 :: "int list \<Rightarrow> int \<Rightarrow> string"   (* NP-side SUBSET-SUM encoding *)
   assumes SUBSETSUM_in_NP_global:
-    "SUBSETSUM_lang enc0 ∈ 𝒩𝒫"
+    "SUBSETSUM_lang enc0 \<in> \<N>\<P>"
   assumes P_impl_eq_readlr_CL_global:
-    "SUBSETSUM_lang enc0 ∈ 𝒫 ⟹
-       ∃M q0 enc lhs rhs L_zone R_zone.
-         Eq_ReadLR_SubsetSum_Solver M q0 enc lhs rhs L_zone R_zone ∧
+    "SUBSETSUM_lang enc0 \<in> \<P> \<Longrightarrow>
+       \<exists>M q0 enc lhs rhs L_zone R_zone.
+         Eq_ReadLR_SubsetSum_Solver M q0 enc lhs rhs L_zone R_zone \<and>
          polytime_CL_machine M enc"
   assumes eq_to_LR_Read_TM_global:
-    "⋀M q0 enc lhs rhs L_zone R_zone.
-       Eq_ReadLR_SubsetSum_Solver M q0 enc lhs rhs L_zone R_zone ⟹
-       polytime_CL_machine M enc ⟹
+    "\<And>M q0 enc lhs rhs L_zone R_zone.
+       Eq_ReadLR_SubsetSum_Solver M q0 enc lhs rhs L_zone R_zone \<Longrightarrow>
+       polytime_CL_machine M enc \<Longrightarrow>
        LR_Read_TM M q0 enc"
 
 context Global_LR_Assumptions
 begin
 
 lemma no_polytime_eq_readlr_solver:
-  shows "¬ (∃M q0 enc lhs rhs L_zone R_zone.
-              Eq_ReadLR_SubsetSum_Solver M q0 enc lhs rhs L_zone R_zone ∧
+  shows "\<not> (\<exists>M q0 enc lhs rhs L_zone R_zone.
+              Eq_ReadLR_SubsetSum_Solver M q0 enc lhs rhs L_zone R_zone \<and>
               polytime_CL_machine M enc)"
 proof
   assume ex:
-    "∃M q0 enc lhs rhs L_zone R_zone.
-       Eq_ReadLR_SubsetSum_Solver M q0 enc lhs rhs L_zone R_zone ∧
+    "\<exists>M q0 enc lhs rhs L_zone R_zone.
+       Eq_ReadLR_SubsetSum_Solver M q0 enc lhs rhs L_zone R_zone \<and>
        polytime_CL_machine M enc"
   then obtain M q0 enc lhs rhs L_zone R_zone where
     solver: "Eq_ReadLR_SubsetSum_Solver M q0 enc lhs rhs L_zone R_zone" and
     poly:   "polytime_CL_machine M enc"
     by blast
 
-  text ‹Use the bridge: any such equation-based solver gives an LR_Read_TM.›
+  text \<open>Use the bridge: any such equation-based solver gives an LR_Read_TM.\<close>
   from eq_to_LR_Read_TM_global[OF solver poly]
   have lr: "LR_Read_TM M q0 enc" .
 
   interpret LR: LR_Read_TM M q0 enc
     by (rule lr)
 
-  text ‹From polynomial-time on all inputs we deduce an (assumed)
-    polynomial bound on the distinct-subset-sums family.›
+  text \<open>From polynomial-time on all inputs we deduce an (assumed)
+    polynomial bound on the distinct-subset-sums family.\<close>
 
   from poly obtain c d where
     cpos: "c > 0" and
-    bound_all: "∀as s. steps_CL M (enc as s)
-                       ≤ nat (ceiling (c * (real (length as)) ^ d))"
+    bound_all: "\<forall>as s. steps_CL M (enc as s)
+                       \<le> nat (ceiling (c * (real (length as)) ^ d))"
     unfolding polytime_CL_machine_def by blast
 
   have family_bound:
-    "∃(c::real)>0. ∃d::nat.
-       ∀as s. distinct_subset_sums as ⟶
+    "\<exists>(c::real)>0. \<exists>d::nat.
+       \<forall>as s. distinct_subset_sums as \<longrightarrow>
          steps_CL M (enc as s)
-           ≤ nat (ceiling (c * (real (length as)) ^ d))"
+           \<le> nat (ceiling (c * (real (length as)) ^ d))"
     using cpos bound_all by blast
 
-  text ‹But LR_Read_TM’s inherited lower bound says no such polynomial
-    bound exists on the distinct-subset-sums family.›
+  text \<open>But LR_Read_TM’s inherited lower bound says no such polynomial
+    bound exists on the distinct-subset-sums family.\<close>
 
   from LR.no_polytime_CL_on_distinct_family family_bound
   show False by blast
 qed
 
 theorem P_neq_NP_from_LR:
-  "¬ P_eq_NP"
+  "\<not> P_eq_NP"
 proof
   assume eq: P_eq_NP
 
-  text ‹From P = NP and SUBSETSUM_lang enc0 ∈ NP, we get
-    SUBSETSUM_lang enc0 ∈ P.›
-  have inP_SUBSETSUM: "SUBSETSUM_lang enc0 ∈ 𝒫"
+  text \<open>From P = NP and SUBSETSUM_lang enc0 \<in> NP, we get
+    SUBSETSUM_lang enc0 \<in> P.\<close>
+  have inP_SUBSETSUM: "SUBSETSUM_lang enc0 \<in> \<P>"
     using eq SUBSETSUM_in_NP_global
     unfolding P_eq_NP_def by metis
 
-  text ‹By the modelling assumption, this yields an equation-based,
-    polynomial-time Cook–Levin solver for SUBSET-SUM.›
+  text \<open>By the modelling assumption, this yields an equation-based,
+    polynomial-time Cook–Levin solver for SUBSET-SUM.\<close>
   from P_impl_eq_readlr_CL_global[OF inP_SUBSETSUM]
   obtain M q0 enc lhs rhs L_zone R_zone where
     solver: "Eq_ReadLR_SubsetSum_Solver M q0 enc lhs rhs L_zone R_zone" and
     poly:   "polytime_CL_machine M enc"
     by blast
 
-  text ‹Package this solver as a witness for the existential that
-    ‹no_polytime_eq_readlr_solver› forbids.›
+  text \<open>Package this solver as a witness for the existential that
+    \<open>no_polytime_eq_readlr_solver\<close> forbids.\<close>
   have ex_solver:
-    "∃M q0 enc lhs rhs L_zone R_zone.
-       Eq_ReadLR_SubsetSum_Solver M q0 enc lhs rhs L_zone R_zone ∧
+    "\<exists>M q0 enc lhs rhs L_zone R_zone.
+       Eq_ReadLR_SubsetSum_Solver M q0 enc lhs rhs L_zone R_zone \<and>
        polytime_CL_machine M enc"
     using solver poly by blast
 
@@ -406,15 +406,15 @@ qed
 
 end  (* context Global_LR_Assumptions *)
 
-text ‹Non-locale exported version:
+text \<open>Non-locale exported version:
 
   If some encoding enc0 and assumptions
-  "Global_LR_Assumptions enc0" hold, then P ≠ NP.
-›
+  "Global_LR_Assumptions enc0" hold, then P \<noteq> NP.
+\<close>
 
 theorem P_neq_NP_from_LR_global:
   assumes "Global_LR_Assumptions enc0"
-  shows "¬ P_eq_NP"
+  shows "\<not> P_eq_NP"
 proof -
   interpret Global_LR_Assumptions enc0 by fact
   from P_neq_NP_from_LR show ?thesis .
