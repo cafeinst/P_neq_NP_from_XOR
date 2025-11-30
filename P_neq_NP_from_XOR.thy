@@ -12,11 +12,10 @@ text ‹
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 This chapter presents the conceptual, mathematical, and philosophical
-background to the formalisation developed in the theory
-P_neq_NP_from_LR. The central goal is to explain—in clear,
-non-technical language—the structure of the argument, which portions are
-fully formalised in Isabelle/HOL, and which portion is assumed as an
-axiom due to deep complexity-theoretic reasons.
+background to the formalisation developed in this theory. The central goal 
+is to explain—in clear, non-technical language—the structure of the 
+argument, which portions are fully formalised in Isabelle/HOL, and which 
+portion is assumed as an axiom due to deep complexity-theoretic reasons.
 
 The technical machinery of this chapter realises, in verified form,
 a conditional statement of the following kind:
@@ -35,7 +34,7 @@ computational meaning:
 The argument originates from a 2016 paper of Craig A. Feinstein:
 
    • C. A. Feinstein,  
-     *“Dialogue Concerning the Two Chief World Views,”*  
+     “Dialogue Concerning the Two Chief World Views,”  
      arXiv:1605.08639.
 
 This Isabelle/HOL development extracts and formalises the *lower-bound
@@ -97,14 +96,17 @@ The adversary argument goes as follows:
     As long as there exists *any unread bit* whose value can change L or R,
     the adversary can keep two consistent inputs alive.
 
-  • Therefore, to eliminate all 2ᵏ possibilities on the left, the
-    algorithm must read at least k bits from the left region.  Similarly
-    it must read at least n−k bits from the right region.
+  • In the reader model we consider, each distinct L- or R-value that the
+    algorithm must be able to distinguish contributes at least one unit
+    of “work”.  Thus, for a suitable reformulation e(as, s), the cost is
+    bounded below by
 
-  • The total number of reads is at least  
-        2ᵏ + 2ⁿ⁻ᵏ,  
-    which is minimised at k = n/2, giving  
-        2√(2ⁿ).
+        steps ≥ card LHS(e) + card RHS(e) = 2ᵏ + 2ⁿ⁻ᵏ,
+
+    and the function 2ᵏ + 2ⁿ⁻ᵏ is minimised at k = n/2, giving the
+    familiar lower bound
+
+        steps ≥ 2√(2ⁿ).
 
 All of this—definitions, adversary construction, LHS/RHS sets,
 the √(2ⁿ) lower bound—is **fully formalised** in Isabelle/HOL.
@@ -149,27 +151,26 @@ There are three deep reasons, rooted in modern complexity theory.
 
 (1)  *The Natural Proofs Barrier (Razborov–Rudich, 1997).*
 
-Any structural property that rules out all polynomial-time algorithms
-must be “non-natural” or else it would contradict widely believed
-cryptographic assumptions. 
- 
-The LR–read property is precisely such a “information-use” structural
-property; proving it for all polynomial-time Turing machines is expected
-to be as hard as proving P ≠ NP itself.
+Any structural property strong enough to exclude all polynomial-time
+algorithms for an NP-complete problem must, if it is “natural” in the
+Razborov–Rudich sense (constructive, large), contradict widely believed
+cryptographic assumptions (e.g. the existence of pseudorandom functions).
+(See: Razborov, A. A., & Rudich, S., Natural Proofs, JCSS 55(1), 1997.)
 
-(2)  *Encoding flexibility makes structural invariants unprovable.*
+The LR–read property is precisely such an “information-use” structural 
+property; Proving that every polynomial-time Turing machine deciding 
+SUBSET-SUM must read at least one bit from each of two semantic zones 
+(L and R) would amount to proving a non-natural lower bound—widely 
+believed to be impossible without resolving P ≠ NP itself.
 
-Turing machines may use encodings that hide or compress information in
-ways that frustrate direct combinatorial reasoning.  
-Ruling out all such encodings is equivalent to classifying all possible
-polynomial-time algorithms—a problem believed to be intractable.
-
-(3)  *Chaitin’s philosophy of informational unprovability.*
+(2)  *Chaitin’s philosophy of informational unprovability.*
 
 Gregory Chaitin has argued that many deep computational principles—
 especially those about “information content”—cannot be proven inside
 formal systems of comparable strength and should instead be treated as
-**axioms**.
+**axioms**. (See, for example, Chaitin, G. J., “Thoughts on the Riemann 
+Hypothesis,” arXiv:math/0306042, 2003.)
+
 
 The LR–read principle asserts a basic informational necessity:  
 to decide whether L = R, one must obtain information about both L and R.  
@@ -257,10 +258,10 @@ formalised and certified by Isabelle/HOL.
 8.  The Final Conditional Theorem
 -------------------------------------------------------------------------------
 
-The main theorem of P_neq_NP_from_LR is:
+The main theorem of SubsetSum_PneqNP is:
 
-      **If every polynomial-time SUBSET-SUM solver satisfies LR–read,
-         then  P ≠ NP.**
+      **Assuming that every polynomial-time SUBSET-SUM solver satisfies LR–read,
+        we have P ≠ NP.**
 
 This shows that a very simple, very natural informational principle
 —one likely unprovable for deep reasons—bridges the gap between the
@@ -276,7 +277,8 @@ The contribution of this AFP entry is therefore twofold:
     structural fact is needed to conclude P ≠ NP.
 
 This approach does not claim to *prove* P ≠ NP outright, but it provides
-a powerful blueprint:  
+a powerful blueprint:
+
 **identify the minimal structural axiom needed, formalise everything
 around it, and expose precisely what remains to be shown.**
 ›
@@ -324,6 +326,65 @@ text ‹
   machines, and ultimately to derive the conditional theorem  
       *If every P-time SUBSET-SUM solver has the LR–read property,
        then P ≠ NP*.  
+  --------------------------------------------------------------------------
+  ■ Why the locale P_neq_NP_LR_Model is needed
+  --------------------------------------------------------------------------
+
+  Up to this point, the development has proved two kinds of results:
+
+    • *Fully formal combinatorial lower bounds*  
+      (SubsetSum_DecisionTree, SubsetSum_Lemma1, LR_Read_TM) showing that
+      any solver satisfying an LR–read interface must take at least
+      √(2ⁿ) steps on the distinct-subset-sums family.
+
+    • *Concrete Cook–Levin encodings*  
+      showing SUBSET-SUM ∈ NP and defining a notion of an
+      equation-based solver (Eq_ReadLR_SubsetSum_Solver).
+
+  What has **not** been proved — and what modern complexity theory strongly
+  suggests cannot be proved — is the missing implication:
+
+      Every polynomial-time Cook–Levin solver for SUBSET-SUM
+      ⇒ satisfies the LR_Read_TM interface.
+
+  This implication would be a universal structural fact about *all*
+  polynomial-time Turing machines.  Results in the spirit of the Natural
+  Proofs barrier (Razborov–Rudich, 1997) tell us that proving such a
+  general structural invariant about all P-time algorithms would amount to
+  proving a non-natural lower bound — believed to be as hard as proving
+  P ≠ NP itself.
+
+  Therefore, the development isolates this unprovable step as a **clean,
+  explicit modelling assumption**.  The locale P_neq_NP_LR_Model packages
+  exactly the three global assumptions required to turn the LR–read
+  lower-bound theory into a conditional P ≠ NP theorem:
+
+    (1) SUBSET-SUM ∈ NP for the fixed encoding enc0.  
+        This part is fully formalised.
+
+    (2) If SUBSET-SUM ∈ P, then there exists an equation-based
+        polynomial-time solver (Eq_ReadLR_SubsetSum_Solver).  
+        This captures the idea that a P-time algorithm can be expressed in
+        a semantic “L = R” form.  This is a modelling assumption.
+
+    (3) Any such equation-based solver can be viewed as an LR–read solver
+        (LR_Read_TM) for some abstract seen sets.  
+        This is the crucial structural assumption: it asserts that the
+        solver’s behaviour aligns with the LR-read interface required to
+        import the √(2ⁿ) lower bound.  It is *not* provable in general and
+        is included transparently as an explicit axiom.
+
+  Once these assumptions are made, the lower-bound results proved in
+  LR_Read_TM immediately imply that no polynomial-time Cook–Levin
+  solver can exist on the distinct-subset-sums family.  Combined with
+      P = NP ⇒ SUBSET-SUM ∈ P,
+  this yields the conditional theorem:
+
+      **If every P-time SUBSET-SUM solver satisfies LR–read,
+         then P ≠ NP.**
+
+  The locale below formalises exactly these three meta-assumptions.
+  --------------------------------------------------------------------------
 ›
 
 locale P_neq_NP_LR_Model =
@@ -340,8 +401,6 @@ locale P_neq_NP_LR_Model =
        Eq_ReadLR_SubsetSum_Solver M q0 enc lhs rhs L_zone R_zone ⟹
        polytime_CL_machine M enc ⟹
        (∃seenL seenR. LR_Read_TM M q0 enc seenL seenR)"
-
-context P_neq_NP_LR_Model
 begin
 
 lemma no_polytime_eq_readlr_solver:
