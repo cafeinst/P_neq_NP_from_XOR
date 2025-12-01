@@ -160,8 +160,11 @@ cryptographic assumptions (e.g. the existence of pseudorandom functions).
 The LR–read property is precisely such an “information-use” structural
 property; proving that every polynomial-time Turing machine deciding
 SUBSET-SUM must read at least one bit from each of two semantic zones
-(L and R) would amount to proving a non-natural lower bound—widely
-believed to be impossible without resolving P ≠ NP itself.
+(L and R) would require establishing a kind of non-natural lower bound.
+Results in the spirit of the Natural Proofs barrier suggest that such
+strong structural lower bounds are widely believed to be unattainable
+by currently known “natural” methods without undermining widely believed
+cryptographic assumptions, such as the existence of pseudorandom functions.
 
 (2)  *Chaitin’s philosophy of informational unprovability.*
 
@@ -208,7 +211,8 @@ Everything else is mechanised.
 
 Under this assumption, we obtain the main theorem:
 
-      **If SUBSET-SUM is solved in P, then P ≠ NP.**
+      **If SUBSET-SUM lies in P and every such solver satisfies LR–read,
+        then P ≠ NP.**
 
 Equivalently, relative to the modelling assumptions packaged in
 the locale P_neq_NP_LR_Model:
@@ -253,6 +257,20 @@ a rigorous mathematical framework.
 
 Importantly, *everything else*—including the √(2ⁿ) lower bound—is
 formalised and certified by Isabelle/HOL.
+
+This formalisation is not intended as a proof of P ≠ NP.  Rather, it
+provides a fully verified framework in which the classical adversary
+lower bound for SUBSET-SUM can be transported to the Cook–Levin model,
+conditional on a single, clearly stated structural assumption: the
+LR–read property. In light of the Natural Proofs barrier
+(Razborov–Rudich, 1997), such a universal information-use property is
+widely regarded as unlikely to be derivable in ZFC by currently known
+“natural” techniques without running afoul of standard cryptographic
+assumptions. Thus, the formalisation should be viewed as a case study
+in isolating the precise informational axiom on which this style of
+lower-bound argument depends, rather than as progress toward resolving
+P vs NP.  The lower-bound kernel itself is fully mechanised and may be
+reusable in future developments.
 
 -------------------------------------------------------------------------------
 8.  The Final Conditional Theorem
@@ -356,11 +374,12 @@ text ‹
       Every polynomial-time Cook–Levin solver for SUBSET-SUM
          ⇒ satisfies LR_Read_TM.
 
-  Such a statement would assert a universal structural property of *all
-  polynomial-time algorithms*.  By results in the spirit of the Natural
+  Such a statement would assert a universal structural property of all
+  polynomial-time algorithms.  By results in the spirit of the Natural
   Proofs barrier (Razborov–Rudich, 1997), proving such a structural
-  invariant would amount to proving a non-natural lower bound — believed
-  to be as hard as proving P ≠ NP itself.
+  invariant by currently known, “natural” methods would require a kind of
+  non-natural lower bound and would conflict with standard cryptographic
+  assumptions, such as the existence of pseudorandom functions.
 
   Therefore the unprovable step is isolated as an explicit, clean
   modelling assumption.  The locale P_neq_NP_LR_Model packages the
