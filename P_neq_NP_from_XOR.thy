@@ -157,10 +157,10 @@ Razborov–Rudich sense (constructive, large), contradict widely believed
 cryptographic assumptions (e.g. the existence of pseudorandom functions).
 (See: Razborov, A. A., & Rudich, S., Natural Proofs, JCSS 55(1), 1997.)
 
-The LR–read property is precisely such an “information-use” structural 
-property; Proving that every polynomial-time Turing machine deciding 
-SUBSET-SUM must read at least one bit from each of two semantic zones 
-(L and R) would amount to proving a non-natural lower bound—widely 
+The LR–read property is precisely such an “information-use” structural
+property; proving that every polynomial-time Turing machine deciding
+SUBSET-SUM must read at least one bit from each of two semantic zones
+(L and R) would amount to proving a non-natural lower bound—widely
 believed to be impossible without resolving P ≠ NP itself.
 
 (2)  *Chaitin’s philosophy of informational unprovability.*
@@ -170,7 +170,6 @@ especially those about “information content”—cannot be proven inside
 formal systems of comparable strength and should instead be treated as
 **axioms**. (See, for example, Chaitin, G. J., “Thoughts on the Riemann 
 Hypothesis,” arXiv:math/0306042, 2003.)
-
 
 The LR–read principle asserts a basic informational necessity:  
 to decide whether L = R, one must obtain information about both L and R.  
@@ -211,11 +210,12 @@ Under this assumption, we obtain the main theorem:
 
       **If SUBSET-SUM is solved in P, then P ≠ NP.**
 
-Equivalently:
+Equivalently, relative to the modelling assumptions packaged in
+the locale P_neq_NP_LR_Model:
 
-      **If every polynomial-time SUBSET-SUM solver must read  
-         at least one bit from L and at least one from R,  
-         then P ≠ NP.**
+      **If every polynomial-time SUBSET-SUM solver can be represented
+         as an equation-based solver and every such solver satisfies
+         the LR–read property, then P ≠ NP.**
 
 -------------------------------------------------------------------------------
 6.  Relationship to Feinstein (2016)
