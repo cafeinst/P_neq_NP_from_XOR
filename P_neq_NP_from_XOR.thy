@@ -375,12 +375,20 @@ text ‹
       Every polynomial-time Cook–Levin solver for SUBSET-SUM
          ⇒ satisfies LR_Read_TM.
 
-  Such a statement would assert a universal structural property of all
-  polynomial-time algorithms.  By results in the spirit of the Natural
-  Proofs barrier (Razborov–Rudich, 1997), proving such a structural
-  invariant by currently known, “natural” methods would require a kind of
-  non-natural lower bound and would conflict with standard cryptographic
-  assumptions, such as the existence of pseudorandom functions.
+  Such a statement would assert a universal structural constraint on 
+  the behaviour of all polynomial-time algorithms for SUBSET-SUM. 
+  Complexity theory provides several indications — most prominently 
+  the Razborov–Rudich Natural Proofs framework — that broad, efficiently 
+  checkable invariants of all P-time algorithms are difficult to prove 
+  using current techniques, especially when they interact with standard 
+  cryptographic assumptions such as pseudorandom functions.
+
+  Our development does not rely on Natural Proofs in any technical sense, 
+  and the LR–read lower bound itself is not a natural proof. The connection 
+  is only heuristic: it suggests that proving a universal information-use 
+  property of all polynomial-time solvers may be beyond presently known 
+  methods, which motivates treating LR–read as an explicit modelling 
+  assumption rather than a derived theorem.
 
   Therefore the unprovable step is isolated as an explicit, clean
   modelling assumption.  The locale P_neq_NP_LR_Model packages the
@@ -449,9 +457,16 @@ text ‹
 ›
 
 locale P_neq_NP_LR_Model =
-  fixes enc0 :: "int list ⇒ int ⇒ string"
-  assumes SUBSETSUM_in_NP_global:
-    "SUBSETSUM_lang enc0 ∈ 𝒩𝒫"
+  fixes enc0     :: "int list ⇒ int ⇒ string"
+    and k        :: nat              (* number of tapes for the NP TM *)
+    and q0V      :: nat              (* start state for the NP verifier V *)
+    and V        :: machine          (* NP-style Turing machine *)
+    and p        :: "nat ⇒ nat"
+    and T        :: "nat ⇒ nat"
+    and fverify  :: "string ⇒ string"
+    and enc_cert :: "int list ⇒ int ⇒ int list ⇒ string"
+  assumes SS_verifier:
+    "SS_Verifier_NP k q0V V p T fverify enc0 enc_cert"
   assumes P_impl_eq_readlr_CL_global:
     "SUBSETSUM_lang enc0 ∈ 𝒫 ⟹
        ∃M q0 enc lhs rhs L_zone R_zone.
@@ -463,6 +478,10 @@ locale P_neq_NP_LR_Model =
        polytime_CL_machine M enc ⟹
        (∃seenL seenR. LR_Read_TM M q0 enc seenL seenR)"
 begin
+
+lemma SUBSETSUM_in_NP_global:
+  "SUBSETSUM_lang enc0 ∈ 𝒩𝒫"
+  using SUBSETSUM_in_NP_from_verifier[OF SS_verifier] .
 
 lemma no_polytime_eq_readlr_solver:
   shows "¬ (∃M q0 enc lhs rhs L_zone R_zone.
@@ -513,8 +532,6 @@ theorem P_neq_NP_from_LR:
 proof
   assume eq: P_eq_NP
 
-  text ‹From P = NP and SUBSETSUM_lang enc0 ∈ NP, we get
-    SUBSETSUM_lang enc0 ∈ P.›
   have eq_PNP_inst:
     "(SUBSETSUM_lang enc0 ∈ 𝒫) = (SUBSETSUM_lang enc0 ∈ 𝒩𝒫)"
     using eq unfolding P_eq_NP_def by simp
@@ -556,10 +573,10 @@ text ‹Non-locale exported version:
 ›
 
 theorem P_neq_NP_from_LR_global:
-  assumes "P_neq_NP_LR_Model enc0"
+  assumes "P_neq_NP_LR_Model enc0 k G V p T fverify enc_cert"
   shows "¬ P_eq_NP"
 proof -
-  interpret P_neq_NP_LR_Model enc0 by fact
+  interpret P_neq_NP_LR_Model enc0 k G V p T fverify enc_cert by fact
   from P_neq_NP_from_LR show ?thesis .
 qed
 
