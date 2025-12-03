@@ -33,10 +33,10 @@ This development extracts and formalises the lower-bound core of:
         “Dialogue Concerning the Two Chief World Views,”
         arXiv:1605.08639.
 
-The author received assistance from two AI systems — ChatGPT 
-(OpenAI) and Claude (Anthropic) — primarily in generating explanatory text, 
-improving readability, and refining the presentation of structural assumptions.
-All proofs in this repository are checked by Isabelle/HOL.  Only the LR–read 
+The author received assistance from two AI systems — ChatGPT (OpenAI) and 
+Claude (Anthropic) — primarily in generating explanatory text, improving 
+readability, and refining the presentation of structural assumptions. All 
+proofs in this repository are checked by Isabelle/HOL.  Only the LR–read 
 condition is left as a modelling assumption.
 
 -------------------------------------------------------------------------------
