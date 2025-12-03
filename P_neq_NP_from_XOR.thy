@@ -27,17 +27,20 @@ The information-flow principle is intuitive:
         a solver must read at least one bit of the input that encodes L
         and at least one bit of the input that encodes R.**
 
-This development extracts and formalises the lower-bound core of:
+This development formalises the lower-bound core of:
 
       • C. A. Feinstein,
         “Dialogue Concerning the Two Chief World Views,”
         arXiv:1605.08639.
 
-The author received assistance from two AI systems — ChatGPT (OpenAI) and 
-Claude (Anthropic) — primarily in generating explanatory text, improving 
-readability, and refining the presentation of structural assumptions. All 
-proofs in this repository are checked by Isabelle/HOL.  Only the LR–read 
-condition is left as a modelling assumption.
+In preparing this Isabelle/HOL formalisation and its accompanying
+expository text, the present author made use of two AI language
+models — ChatGPT (OpenAI) and Claude (Anthropic) — to help draft and
+refine natural-language explanations, background discussions, and
+high-level summaries.  All mathematical definitions and proofs are
+fully formalised in Isabelle/HOL and mechanically verified.  The only
+non-proven ingredient in this development is the LR–read assumption,
+which is introduced deliberately as an explicit modelling axiom.
 
 -------------------------------------------------------------------------------
 1.  Why SUBSET-SUM?
