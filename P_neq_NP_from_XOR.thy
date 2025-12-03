@@ -33,14 +33,14 @@ This development formalises the lower-bound core of:
         “Dialogue Concerning the Two Chief World Views,”
         arXiv:1605.08639.
 
-In preparing this Isabelle/HOL formalisation and its accompanying
-expository text, the present author made use of two AI language
-models — ChatGPT (OpenAI) and Claude (Anthropic) — to help draft and
-refine natural-language explanations, background discussions, and
-high-level summaries.  All mathematical definitions and proofs are
-fully formalised in Isabelle/HOL and mechanically verified.  The only
-non-proven ingredient in this development is the LR–read assumption,
-which is introduced deliberately as an explicit modelling axiom.
+The author of this formalisation received assistance from two AI systems —
+ChatGPT (OpenAI) and Claude (Anthropic). Their assistance consisted of
+drafting and refining explanatory text, improving the readability of the
+introduction and comments, and helping diagnose or structure Isabelle/HOL
+proof scripts.  All formal derivations in this development are verified
+directly by Isabelle/HOL; no unverified inference produced by an AI system
+is accepted. The single non-proved ingredient is the LR–read assumption,
+which is deliberately exposed as a modelling axiom.
 
 -------------------------------------------------------------------------------
 1.  Why SUBSET-SUM?
