@@ -308,152 +308,112 @@ definition P_eq_NP :: bool where
 
 text ‹
   --------------------------------------------------------------------------
-  ■ Summary of the LR–read meta-assumptions
+  ■ The LR–read assumption in the formal development
   --------------------------------------------------------------------------
 
-  The locale P_neq_NP_LR_Model collects the three global assumptions
-  needed to transport the LR–read lower bound (proved in the locale
-  LR_Read_TM) into a full conditional “P ≠ NP” result.
+  Sections 4–5 above explain the informal meaning and motivation of the
+  LR–read principle and why it is treated as an assumption rather than a
+  theorem.  In this section we only record **where** LR–read appears in
+  the Isabelle formalisation and how it is encoded in locales.
 
-  These assumptions are not lower-bound lemmas themselves; they are
-  *meta-level statements* about how polynomial-time Cook–Levin machines
-  behave when solving SUBSET-SUM.  They provide the bridge from
-
-        “SUBSET-SUM ∈ P”
-
-  to
-
-        “some solver must satisfy LR–read”.
-
-  (1) **NP membership.**  
-      For the chosen encoding enc0, the SUBSET-SUM language satisfies  
-         SUBSETSUM_lang enc0 ∈ 𝒩𝒫.  
-      This is fully formalised using NP verifiers.
-
-  (2) **P ⇒ equation-based solver.**  
-      If SUBSETSUM_lang enc0 lies in 𝒫, then there exists a
-      polynomial-time Cook–Levin machine whose correctness is expressed
-      via an equality of two abstract sides
-
-         lhs as s = rhs as s
-
-      and whose reading behaviour satisfies the locale
-      Eq_ReadLR_SubsetSum_Solver.
-
-  (3) **Equation-based ⇒ LR–read.**  
-      Any such equation-based, polynomial-time solver must in fact satisfy
-      the structured LR-read interface
-
-         LR_Read_TM M q0 enc seenL seenR.
-
-      This is the Cook–Levin analogue of the abstract reader model from
-      the decision-tree theory.
-
-  Together, these assumptions provide exactly what is needed to lift the
-  √(2ⁿ) lower bound from abstract reader models to Cook–Levin machines,
-  and ultimately to derive the conditional theorem that *if every P-time
-  SUBSET-SUM solver satisfies LR–read, then P ≠ NP*.
-
-  --------------------------------------------------------------------------
-  ■ Why the locale P_neq_NP_LR_Model is needed
+  ● LR_Read_TM: the abstract LR–read interface for a single solver
   --------------------------------------------------------------------------
 
-  Up to this point, the development has proved two kinds of results:
+  In the theory SubsetSum_CookLevin, the locale LR_Read_TM describes a
+  Cook–Levin Turing machine M with encoding enc whose behaviour aligns
+  with the canonical LHS/RHS value sets from the abstract lower-bound
+  theory.  Its assumptions are:
 
-    • *Fully formal combinatorial lower bounds*  
-      (SubsetSum_DecisionTree, SubsetSum_Lemma1, LR_Read_TM),
-      showing that any solver satisfying LR–read must take at least √(2ⁿ)
-      steps on the distinct-subset-sums family.
+    • a coverage axiom coverage_TM saying that on every hard instance
+      (with distinct subset sums) there exists a split index k such that
+      the “seen” sets seenL_TM as s k and seenR_TM as s k coincide with
+      the canonical sets LHS (e_k as s k) and RHS (e_k as s k);
 
-    • *Concrete Cook–Levin encodings*,  
-      showing SUBSET-SUM ∈ NP and formalising the notion of an
-      equation-based solver (Eq_ReadLR_SubsetSum_Solver).
+    • a cost axiom steps_lb_TM saying that each seen L/R-value contributes
+      at least one unit of work:
+        steps_TM as s ≥ card (seenL_TM as s k) + card (seenR_TM as s k).
 
-  What has **not** been proved — and what modern complexity theory strongly
-  suggests cannot be proved — is the missing implication:
+  Inside this locale we interpret the abstract locale
+  SubsetSum_Lemma1 steps_TM seenL_TM seenR_TM, and therefore inherit the
+  √(2ⁿ) lower bound and the “no polynomial-time bound on the hard family”
+  corollaries for any machine satisfying LR_Read_TM.
 
-      Every polynomial-time Cook–Levin solver for SUBSET-SUM
-         ⇒ satisfies LR_Read_TM.
+  In other words: **LR_Read_TM is the formal LR–read property for a single
+  solver.**  Anything inside this locale automatically satisfies the
+  decision-tree lower bound.
 
-  Such a statement would assert a universal structural constraint on 
-  the behaviour of all polynomial-time algorithms for SUBSET-SUM. 
-  Complexity theory provides several indications — most prominently 
-  the Razborov–Rudich Natural Proofs framework — that broad, efficiently 
-  checkable invariants of all P-time algorithms are difficult to prove 
-  using current techniques, especially when they interact with standard 
-  cryptographic assumptions such as pseudorandom functions.
-
-  Our development does not rely on Natural Proofs in any technical sense, 
-  and the LR–read lower bound itself is not a natural proof. The connection 
-  is only heuristic: it suggests that proving a universal information-use 
-  property of all polynomial-time solvers may be beyond presently known 
-  methods, which motivates treating LR–read as an explicit modelling 
-  assumption rather than a derived theorem.
-
-  Therefore the unprovable step is isolated as an explicit, clean
-  modelling assumption.  The locale P_neq_NP_LR_Model packages the
-  following three assumptions:
-
-    (1) SUBSET-SUM ∈ NP for the fixed encoding enc0.  
-        (Fully formalised.)
-
-    (2) If SUBSET-SUM ∈ P, then there exists an equation-based
-        polynomial-time solver (Eq_ReadLR_SubsetSum_Solver).  
-        (Modelling assumption: p-time solvers can be expressed semantically
-         as L = R.)
-
-    (3) Every such solver satisfies LR-read (LR_Read_TM) for some
-        seenL, seenR.  
-        (Crucial structural assumption: allows importing the √(2ⁿ) bound.)
-
-  With these assumptions, the lower bounds proved in LR_Read_TM
-  immediately imply that **no polynomial-time Cook–Levin solver can
-  exist** on the distinct-subset-sums family.  Since
-
-        P = NP ⇒ SUBSET-SUM ∈ P,
-
-  this yields the conditional theorem:
-
-      **If every P-time SUBSET-SUM solver satisfies LR–read,
-         then P ≠ NP.**
-
-  --------------------------------------------------------------------------
-  ■ Why the locale theorem expresses exactly:
-        “If every polynomial-time solver has LR–read, then P ≠ NP.”
+  ● Eq_ReadLR_SubsetSum_Solver: equation-based solvers
   --------------------------------------------------------------------------
 
-  The intended high-level implication is:
+  The locale Eq_ReadLR_SubsetSum_Solver (also in SubsetSum_CookLevin)
+  describes solvers that decide SUBSET-SUM by comparing two “sides”
+  lhs as s and rhs as s of an equation, with disjoint input zones
+  L_zone as s and R_zone as s that encode these sides.
 
-        (∀ polynomial-time SUBSET-SUM solvers M.  M satisfies LR–read)
-           ⟹   P ≠ NP.
+  Its key assumption must_read_LR says that, on any distinct-subset-sums
+  instance, the machine’s read set intersects both zones:
 
-  In Isabelle this is decomposed using locales:
+      read0_TM as s ∩ L_zone as s ≠ {} and
+      read0_TM as s ∩ R_zone as s ≠ {}.
 
-    • LR_Read_TM  
-      formalises the LR-read property and imports the √(2ⁿ) lower bound.
-      Any solver inside this locale cannot be polynomial-time.
+  This is an explicit, concrete “must read from left and right” condition.
+  It is still weaker and more model-dependent than LR_Read_TM, and it
+  does not yet mention the canonical LHS/RHS sets.
 
-    • Eq_ReadLR_SubsetSum_Solver  
-      describes solvers that operate via an L/R equality.  Assumption (A3)
-      of P_neq_NP_LR_Model states that **every** such polynomial-time
-      solver satisfies LR-read.  Hence every such solver inherits the
-      √(2ⁿ) lower bound.
+  ● How the LR–read assumptions imply “If LR–read holds for all P-time
+    solvers, then P ≠ NP”
+  --------------------------------------------------------------------------
 
-    • P_neq_NP_LR_Model  
-      collects the three meta-assumptions (A1)–(A3):
+  The locale P_neq_NP_LR_Model packages three meta-assumptions that
+  jointly allow the √(2ⁿ) lower bound from LR_Read_TM to be lifted to
+  a full conditional “P ≠ NP” statement.  These assumptions are:
 
-         (A1) SUBSET-SUM ∈ NP,  
-         (A2) If SUBSET-SUM ∈ P, then an equation-based p-time solver exists,  
-         (A3) Every such solver satisfies LR-read (hence cannot be p-time).
+    (A1)  SUBSET-SUM ∈ NP for the chosen encoding enc0.
+          This is fully verified using an explicit NP verifier.
 
-      Under P = NP, (A1) and (A2) give a p-time solver, while (A3) forbids
-      one.  Contradiction.
+    (A2)  If SUBSET-SUM ∈ P, then there exists *some* polynomial-time solver
+          whose behaviour fits the semantic interface Eq_ReadLR_SubsetSum_Solver.
+          In this interface, correctness is expressed by an equation
+            lhs as s = rhs as s
+          and the machine’s reading behaviour respects a designated
+          “L-zone / R-zone’’ partition of the input.
 
-  Thus the locale theorem P_neq_NP_from_LR exactly formalises the
-  conditional statement:
+          This is a modelling assumption: it does **not** claim that every
+          P-time solver for SUBSET-SUM admits such a representation.  
+          It asserts only that, *if* SUBSET-SUM lies in P, then there exists
+          at least one polynomial-time solver whose semantics can be cast
+          in this equation-based form.  This provides a bridge from
+          “SUBSET-SUM ∈ P’’ to the structural LR–read framework.
 
-      **If every polynomial-time SUBSET-SUM solver has the LR–read property,
-         then P ≠ NP.**
+    (A3)  Every such equation-based polynomial-time solver satisfies the
+          LR-read interface LR_Read_TM for some seenL and seenR.
+          This *is the LR–read assumption*.
+
+  Inside the locale, these assumptions combine as follows:
+
+    • From (A1), SUBSET-SUM ∈ NP.  
+      Under the temporary assumption P = NP, we conclude SUBSET-SUM ∈ P.
+
+    • From (A2), SUBSET-SUM ∈ P yields the existence of a polynomial-time
+      equation-based solver.
+
+    • From (A3), any such solver must satisfy LR-read.
+      But every solver satisfying LR-read inherits the √(2ⁿ) lower bound
+      from LR_Read_TM, and therefore cannot be polynomial-time on the
+      distinct-subset-sums family.
+
+      Hence (A3) contradicts the polynomial-time requirement from (A2).
+
+  The locale theorem P_neq_NP_from_LR formalises exactly this reasoning:
+  under assumptions (A1)–(A3), the hypothesis P = NP leads to a contradiction.
+  Therefore:
+
+          **If every polynomial-time SUBSET-SUM solver satisfies LR–read,
+             then P ≠ NP.**
+
+  The Isabelle development therefore isolates the LR–read property as the
+  *single structural assumption* required to turn the fully mechanised
+  lower-bound kernel into a full separation of P and NP.
 ›
 
 locale P_neq_NP_LR_Model =
