@@ -31,11 +31,13 @@ This development formalises the lower-bound core of:
       "Dialogue Concerning the Two Chief World Views",
       arXiv:1605.08639.
 
-All proofs in this theory have been verified directly by Isabelle/HOL.  The only
-non-proved ingredient is the LR-read assumption, which is exposed explicitly as
-a modeling hypothesis.  No unverified inference produced by any external tool
-is accepted; AI assistance was used only for explanatory text and for structuring
-comments, never for mathematical justification.
+The author of this formalisation received assistance from two AI systems —
+ChatGPT (OpenAI) and Claude (Anthropic). Their assistance consisted of
+drafting and refining explanatory text, improving the readability of the
+introduction and comments, and helping diagnose or structure Isabelle/HOL
+proof scripts. All proofs in this theory have been verified directly by Isabelle/HOL.
+The only non-proved ingredient is the LR-read assumption, which is exposed 
+explicitly as a modeling hypothesis.
 
 -------------------------------------------------------------------------------
 1.  Why SUBSET-SUM?
