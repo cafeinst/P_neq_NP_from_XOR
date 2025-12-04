@@ -229,6 +229,11 @@ text ‹
   This connects the *language-level* assumption “SUBSET–SUM is in P”
   to a *machine-level* solver that can be analysed using the LR-Read locale
   and the step-count.
+
+  Note that the encoding `enc` used by the concrete Cook–Levin machine
+  need not coincide with `enc0`; the definition only demands that *some*
+  CL-machine/encoding pair solves the same underlying SUBSET-SUM instances
+  in polynomial time.
 ›
 
 definition P_impl_CL_SubsetSum_Solver ::
@@ -276,8 +281,6 @@ definition LR_read_all_solvers_hypothesis ::
      (∀M q0 enc.
         CL_SubsetSum_Solver M q0 enc ⟶
           (∃seenL seenR. LR_Read_TM M q0 enc seenL seenR))"
-
-
 
 text ‹
   ---------------------------------------------------------------------------
