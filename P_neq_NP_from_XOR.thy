@@ -248,599 +248,314 @@ section ‹3.  From Decision Trees to Cook–Levin Turing Machines›
 
 text ‹
 A Cook–Levin Turing machine is far more flexible than a decision tree: it may
-reorder, compress, or duplicate parts of the input.  Decision-tree lower bounds
-do not automatically carry over.
+reorder, compress, or duplicate parts of the input, and it can perform
+arithmetic and state-based computation.  Decision-tree lower bounds therefore
+do not automatically carry over to the Turing-machine model.
 
-To bridge the gap, SubsetSum_CookLevin defines the locale LR_Read_TM.
+To bridge this gap, the theory ‹SubsetSum_CookLevin› introduces the locale
+‹LR_Read_TM›.  Its purpose is to connect the abstract reader-style quantities
+from ‹SubsetSum_Lemma1› to concrete objects living in the Cook–Levin
+framework:
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■  The Intuitive Principle
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • ‹steps_TM as s› is the running time of a fixed machine ‹M› on the encoding
+    of the instance ‹(as, s)›,
 
-The key informal idea is:
+  • ‹seenL_TM as s k› and ‹seenR_TM as s k› are sets of canonical L- and
+    R-values associated with a split position ‹k›.
 
-      "To decide whether two quantities L and R are equal, the solver must 
-       actually read information coming from the L-zone and from the R-zone 
-       of the input encoding."
+Informally, the guiding principle is:
 
-For subset-sum, when we split at position k, the verification equation becomes:
+      “To decide whether L = R, a solver must extract information
+       from both the L-zone and the R-zone of the input encoding.”
 
-      ∑(first k weights × choices)  =  target - ∑(last n-k weights × choices)
-              ↑ L side ↑                              ↑ R side ↑
+For subset-sum, splitting at position ‹k› rewrites the verification equation as
 
-If a solver never examines the L side, it cannot determine which of the 2^k 
-possible L-values it is dealing with—and similarly for the R side.  A correct
-solver must therefore extract enough information to pin down both sides.
+      ∑ᵢ₍ᵢ<ₖ₎ as!i * xs!i  =  s - ∑ᵢ₍ᵢ≥ₖ₎ as!i * xs!i
+              ↑ L side ↑              ↑      R side      ↑
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■  Formalizing "Information Extraction" for Turing Machines
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+If the weights ‹as› have distinct subset sums, then as the choice-vector
+‹xs ∈ {0,1}ⁿ› ranges over all possibilities, the LHS and RHS each take on
+a family of distinct values determined by disjoint blocks of bits in ‹xs›:
 
-The challenge: A Turing machine does not directly compute L and R.  Instead, it
-reads bits from an encoded input ‹enc as s› and makes state transitions.  How do
-we formalize what the machine "knows" about L and R?
+  • ‹LHS (eₖ as s)› is the set of all L-values induced by varying the prefix
+    bits ‹xs[0..k−1]›,
 
-**Definition (distinguishability):**
+  • ‹RHS (eₖ as s)› is the set of all R-values induced by varying the suffix
+    bits ‹xs[k..n−1]›.
 
-We say the machine *distinguishes* two L-values v₁ and v₂ if changing the input
-from an instance with L = v₁ to one with L = v₂ (while keeping everything else
-fixed) causes different machine behavior—different bits read, different states
-visited, or different final outputs.
+In the decision-tree model, the reader interacts explicitly with these families.
+For a Turing machine, we instead look at what the machine’s behaviour can
+distinguish.
 
-The set ‹seenL_TM as s k› collects all L-values at split k that the machine's
-behavior can distinguish when run on instance (as, s).  If the machine cannot
-tell v₁ from v₂ apart, they are treated as equivalent and only one representative
-enters the set.
+  • ‹seenL_TM as s k› collects those canonical L-values at split ‹k› that lead
+    to measurably different machine behaviour (different reads, states, or
+    outputs) when the instance is varied accordingly;
 
-Symmetrically, ‹seenR_TM as s k› tracks distinguishable R-values.
+  • ‹seenR_TM as s k› is defined symmetrically for R-values.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■  The LR-Read Assumption (Exact Alignment)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+These sets therefore measure how many different L- and R-values the machine has
+effectively “told apart” at position ‹k›.
 
-Inside LR_Read_TM, the informal principle becomes an exact mathematical
-requirement: for some split k, we require
+The LR-read assumptions in ‹LR_Read_TM› impose two key requirements:
 
-      seenL_TM as s k  =  LHS(eₖ as s)   and
-      seenR_TM as s k  =  RHS(eₖ as s).
+  (LR1)  **Canonical alignment.**  On every instance with distinct subset sums
+        there exists some split ‹k ≤ length as› such that
 
-Here LHS(eₖ as s) is the set of ALL possible L-values that can arise at split k
-as the choice-vector xs ranges over {0,1}ⁿ, and similarly for RHS.
+          seenL_TM as s k = LHS (e_k as s k) (length as)
+          seenR_TM as s k = RHS (e_k as s k) (length as).
 
-**Why equality, not just subset?**
+        Thus, at a critical split, the machine’s distinguishable L-/R-values
+        coincide exactly with the canonical families used by the abstract
+        argument.  The machine neither ignores any canonical possibility nor
+        distinguishes extra, non-canonical values: its information flow follows
+        the same combinatorial pattern as the decision-tree reader.
 
-- Superset (seenL_TM ⊇ LHS):  Every possible L-value is distinguishable to
-  the machine.  This direction is *necessary*: if the machine cannot distinguish
-  two different L-values that lead to different answers, it might err.
+  (LR2)  **Linear cost.**  For all ‹as, s, k› we have
 
-- Subset (seenL_TM ⊆ LHS):  The machine distinguishes nothing beyond the
-  canonical L-values defined by the split.  This direction is the *strong
-  modeling assumption*: it says the machine's internal view of the problem
-  aligns exactly with the mathematical split into L and R.
+          steps_TM as s ≥ |seenL_TM as s k| + |seenR_TM as s k|.
 
-**What this equality means:**
+        Distinguishing many L-/R-values is assumed to cost at least one unit of
+        work per distinguishable value.  This mirrors the abstract “each
+        distinguishable value costs ≥ 1 step” axiom in ‹SubsetSum_Lemma1›.
 
-The machine's information extraction perfectly matches the canonical mathematical
-split—no more, no less.  The machine does not, for instance, distinguish 2^n
-arbitrary patterns in the encoding that have nothing to do with subset-sum
-structure; instead, its distinguishing power is *precisely* the 2^k canonical
-L-values and 2^(n-k) canonical R-values.
+Given (LR1) and (LR2), we can instantiate the abstract locale
+‹SubsetSum_Lemma1› with
 
-This is a strong constraint on *how* algorithms can work.  It rules out solvers
-that:
-  • compress or hash the L and R information together,
-  • use arithmetic on the target s to bypass bit-by-bit inspection,
-  • distinguish values in a non-canonical coordinate system.
+      steps  = steps_TM,
+      seenL  = seenL_TM,
+      seenR  = seenR_TM.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■  The Cost Principle (Linear Distinguishability Cost)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+For lists ‹as› with distinct subset sums, the cardinalities of the canonical
+families satisfy
 
-A second axiom in LR_Read_TM states:
+      |LHS (e_k as s k)| = 2^k,      |RHS (e_k as s k)| = 2^(n−k),
 
-      steps_TM as s  ≥  |seenL_TM as s k| + |seenR_TM as s k|.
+and hence
 
-**Rationale:** Each distinguishable value requires reading *something* from the
-input.  If the machine distinguishes 2^k different L-values, it must have
-extracted enough information to tell them apart, which requires computational
-work.
+      |LHS| + |RHS| ≥ 2 * sqrt (2^n)
 
-**The strong form:** The axiom claims that distinguishing N values costs at
-least N *steps*, not just log(N) bits of information.  This would hold if:
-  • each step reveals at most one bit of information, AND
-  • the machine must explicitly "touch" each distinguishable value.
+by the arithmetic–geometric mean inequality.  Combining this with (LR2) yields
 
-This is natural in the decision-tree model (where each query reveals one bit and
-each value requires its own query), but it is a *modeling assumption* for Turing
-machines.  Real machines might:
-  • use arithmetic or hashing to process many values in one step,
-  • compress information so that N values require only log(N) space/time,
-  • exploit structure in the encoding to avoid exhaustive enumeration.
+      steps_TM as s ≥ 2 * sqrt ((2::real) ^ n)
 
-The axiom constrains the algorithm's strategy: it must pay linear cost in the
-size of the seen-sets, ruling out clever shortcuts.
+for all distinct-subset-sum ‹as› of length ‹n›.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■  How These Assumptions Yield the Lower Bound
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Formally, the locale ‹LR_Read_TM› carries out this instantiation and imports
+the lower bound as theorems
 
-Given the two LR-read axioms, we can instantiate the abstract locale
-SubsetSum_Lemma1 from the decision-tree theory:
+      ‹subset_sum_sqrt_lower_bound_TM›  and
+      ‹no_polytime_CL_on_distinct_family›,
 
-(1) From the equality assumption:
-      |seenL_TM as s k| = |LHS(eₖ as s)| = 2^k,
-      |seenR_TM as s k| = |RHS(eₖ as s)| = 2^(n-k).
-
-(2) The product constraint:
-      |seenL_TM| × |seenR_TM| = 2^k × 2^(n-k) = 2^n.
-
-(3) By the arithmetic-geometric mean inequality:
-      |seenL_TM| + |seenR_TM|  ≥  2 √(|seenL_TM| × |seenR_TM|)
-                                =  2 √(2^n).
-
-(4) By the cost axiom:
-      steps_TM as s  ≥  |seenL_TM| + |seenR_TM|  ≥  2 √(2^n).
-
-This is the same √(2^n) lower bound derived in the decision-tree model, now
-applied to Cook–Levin machines—but only for those machines satisfying the
-LR-read assumptions.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■  What Is and Isn't Proven
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-**Proven in Isabelle:**
-  • The mathematical implication: IF a machine satisfies the LR-read axioms,
-    THEN its step-count is at least 2√(2^n) on hard instances.
-  • The instantiation: the LR-read axioms are sufficient to trigger the
-    decision-tree lower-bound machinery.
-
-**NOT proven:**
-  • That any actual Turing-machine solver for subset-sum must satisfy LR-read.
-  • That the LR-read assumptions are "natural" or "unavoidable" properties of
-    computation.
-  • That real algorithms cannot circumvent these assumptions via compression,
-    arithmetic, or alternative representations.
-
-The LR-read property is a *modeling hypothesis*.  It restricts the class of
-algorithms under consideration to those whose information flow aligns with the
-canonical L/R split and whose cost scales linearly with distinguishability.
-
-If this hypothesis holds for all subset-sum solvers, the √(2^n) lower bound
-proves that subset-sum ∉ P, and therefore P ≠ NP.  If any solver violates
-LR-read (for example, by using arithmetic on s to extract bits without reading
-them sequentially, or by processing L and R information in compressed or
-interleaved form), then the lower bound does not apply to that solver.
-
-The value of this formalization is not that it proves P ≠ NP unconditionally,
-but that it isolates LR-read as the *precise* structural assumption required
-to make the argument work.  Every other component is fully mechanized in
-Isabelle; only the LR-read hypothesis remains as an external premise.
+which are the TM-level versions of the decision-tree lower bound.  A more
+global summary of what is and is not proved appears in Section ‹5›.
 ›
+
 
 section ‹4.  Why LR-read is Assumed›
 
 text ‹
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■  The Central Question
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-The central assumption of this entire development is:
+The central modelling assumption of this development is:
 
       **Every Turing-machine solver for SUBSET–SUM satisfies LR-read.**
 
-This is *not* proven.  It is a modeling axiom about how computation works.
+This claim is *not* proved in Isabelle/HOL; it is an external hypothesis about
+the structure of all possible algorithms and encodings for SUBSET–SUM.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■  What LR-Read Means
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Recall from Section ‹3› that LR-read has two components:
 
-Recall from Section 3 that LR-read has two components:
+  • **Exact canonical alignment**: for each distinct-subset-sum instance there
+    exists a split ‹k› where the sets of L- and R-values that the machine
+    effectively distinguishes coincide exactly with the canonical families
 
-**1. Exact canonical alignment:**
+          seenL_TM as s k = LHS (e_k as s k) (length as)
+          seenR_TM as s k = RHS (e_k as s k) (length as),
 
-For some split k, the machine's behavior distinguishes exactly the canonical
-LHS and RHS value sets:
+    so that the machine’s information flow aligns perfectly with the
+    L/R-splitting used in the decision-tree argument.
 
-      seenL_TM as s k  =  LHS(eₖ as s)    (all 2^k possible L-values)
-      seenR_TM as s k  =  RHS(eₖ as s)    (all 2^(n-k) possible R-values)
+  • **Linear distinguishability cost**:
 
-This rules out machines whose internal representation doesn't align with the
-canonical L/R split—for example, machines that work in a different coordinate
-system, or that compress L and R information together.
+          steps_TM as s ≥ |seenL_TM as s k| + |seenR_TM as s k|,
 
-**2. Linear distinguishability cost:**
+    asserting that distinguishing many canonical values costs at least one unit
+    of work per value.
 
-      steps_TM as s  ≥  |seenL_TM as s k| + |seenR_TM as s k|
+These conditions are plausible if one imagines a solver that explicitly
+“recovers” the same LHS/RHS families that drive the abstract reader model:
+to verify ‹L = R›, the solver must in some sense inspect information from both
+sides, and each distinguishable possibility seems to require its own effort.
+However, general Turing machines can in principle:
 
-This rules out machines that can distinguish many values in sublinear time—
-for example, via hashing, arithmetic shortcuts, or compressed representations.
+  • work in a different coordinate system where L and R information is
+    intertwined or compressed,
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■  Why This Is Plausible (Intuitive Argument)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • use arithmetic on the target ‹s› and the weights ‹as› to extract bits in
+    bulk or in indirect ways,
 
-The informal intuition is appealing:
+  • exploit encodings where the L- and R-zones are not cleanly separated on
+    the tape.
 
-    "To verify L = R, you must examine both L and R.  You can't tell whether
-     two quantities are equal without looking at both of them."
+In such situations, it is far from obvious that the machine’s distinguishable
+values must line up with the canonical ‹LHS›/‹RHS› sets, or that the running
+time must scale linearly in their cardinalities.
 
-For the canonical split at position k:
-  • L depends only on the first k weights and choices
-  • R depends only on the last n-k weights and choices
-  • They are "informationally separated" in the input encoding
+From a complexity-theoretic perspective, this is exactly the hard part: LR-read
+is a *global* structural restriction on all algorithms for SUBSET–SUM.  The
+present theory does not attempt to justify it; instead, it treats LR-read as
+a clear, explicit hypothesis and explores its consequences.
 
-So examining L requires reading bits from one part of the encoding, and
-examining R requires reading bits from another part.  If the encoding spatially
-separates these regions, any algorithm must visit both regions.
+Under this hypothesis, the formal development shows:
 
-Moreover, if there are 2^k possible L-values, you need enough "queries" or
-"inspection steps" to distinguish among them—intuitively, at least 2^k bits of
-information, which requires at least 2^k steps if each step yields one bit.
+  • any single Cook–Levin Turing machine satisfying LR-read inherits the
+    √(2ⁿ) lower bound on instances with distinct subset sums (via
+    ‹LR_Read_TM›), and
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■  Why This Might Be False (Counterarguments)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • if in addition every polynomial-time SUBSET–SUM solver were required to
+    satisfy LR-read, then SUBSET–SUM could not lie in ‹𝒫›, and hence we would
+    obtain a separation ‹P ≠ NP›.
 
-Despite its intuitive appeal, LR-read might not hold for all solvers:
-
-**1. Alternative representations:**
-
-A machine might use a coordinate system where L and R information is interleaved
-or combined.  For example, it might compute hash values or checksums that depend
-on both L and R simultaneously, rather than separating them.
-
-The canonical split eₖ is mathematically natural but computationally arbitrary—
-there's no law requiring machines to respect it.
-
-**2. Arithmetic shortcuts:**
-
-For instances like as = [1, 2, 4, …, 2ⁿ⁻¹], a machine can solve SUBSET–SUM by
-treating s as a binary number and reading its bits directly (via division and
-modulo operations), without ever separating L and R in the sense required by
-LR-read.
-
-More generally, a machine might perform arithmetic on s to extract information
-in compressed form, rather than reading individual encoding bits.
-
-**3. Sublinear information extraction:**
-
-The linear-cost axiom (steps ≥ 2^k + 2^(n-k)) assumes that distinguishing N
-values costs N steps.  But in many models:
-  • Distinguishing N values requires only log(N) bits of information
-  • A single arithmetic operation can extract log(N) bits
-  • Hashing or indexing can access specific values in O(1) time
-
-The decision-tree model, where each query reveals exactly one bit about one
-value, is special.  Real computation is more flexible.
-
-**4. Encoding dependence:**
-
-LR-read is defined relative to a specific encoding enc.  Different encodings of
-the same mathematical problem can have radically different properties.  An
-adversarial encoding might spatially separate L and R, making LR-read necessary,
-but a clever encoding might interleave or redundantly represent information,
-allowing algorithms to bypass the L/R separation.
-
-The assumption tacitly requires that *all* "reasonable" encodings force LR-read,
-but this isn't proven.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■  The Circularity Issue
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-There is a deeper problem: LR-read is *at least as strong* as the conclusion
-we want to prove.
-
-The argument has the form:
-  • Assume: all solvers satisfy LR-read
-  • Conclude: SUBSET–SUM requires √(2ⁿ) time, so P ≠ NP
-
-But we could equally well say:
-  • Assume: SUBSET–SUM requires √(2ⁿ) time
-  • Conclude: all solvers must satisfy something like LR-read
-
-In other words, the "assumption" is really just another way of stating the
-desired conclusion.  We haven't explained *why* computation must follow the
-LR-read pattern; we've simply packaged that claim as a hypothesis.
-
-This is similar to proving "if all sorting algorithms compare every pair of
-elements, then sorting requires Ω(n²) comparisons."  True, but uninformative—
-the premise is false (many algorithms use fewer comparisons), and proving the
-implication doesn't advance our understanding.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■  What Would Justify LR-Read?
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-To make LR-read a useful assumption rather than a restatement of the conclusion,
-we would need an *independent* argument that it must hold, such as:
-
-**1. Encoding-based argument:**
-
-Prove that for *any* encoding satisfying certain natural properties (polynomial
-length, efficiently decodable, preserving problem structure), the L and R
-information must be spatially separated in a way that forces LR-read behavior.
-
-This would shift the question to: "what are reasonable encoding properties?"
-but it would at least separate the encoding theory from the algorithm analysis.
-
-**2. Information-theoretic argument:**
-
-Prove that distinguishing 2ⁿ possibilities *fundamentally* requires extracting
-n bits of information, and that Turing machines can extract at most O(1) bits
-per step, making √(2ⁿ) steps necessary.
-
-This faces obstacles from communication complexity and circuit lower bounds,
-which show that such arguments are difficult and require strong assumptions
-about the computational model.
-
-**3. Restricted model:**
-
-Prove LR-read for a restricted class of algorithms (e.g., "oblivious" algorithms
-that always read input in the same pattern, or "comparison-based" algorithms
-that only compare values).
-
-This is more achievable but less interesting—it only gives conditional lower
-bounds for the restricted class, not for all algorithms.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■  The Value of This Formalization Despite the Gap
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Even though LR-read is not proven, this formalization has value:
-
-**Conceptual clarity:**
-
-It isolates *exactly* what must be shown to make information-theoretic lower
-bounds work.  Before this formalization, the gap between "intuitively, you must
-read both sides" and "provably, all algorithms require exponential time" was
-vague.  Now we have a precise statement: prove LR-read, and the rest follows
-mechanically.
-
-**Proof engineering:**
-
-Everything except LR-read is fully verified in Isabelle.  If someone later finds
-a way to prove LR-read (or a weakened version sufficient for a lower bound),
-this machinery is ready to go.  The formalization serves as a "proof template"
-awaiting its key missing lemma.
-
-**Negative result:**
-
-By making LR-read explicit, we can also see more clearly *why* it's hard to
-prove.  It requires constraining the internal structure of all possible
-algorithms, which is exactly what the natural proofs barrier and other
-complexity-theoretic obstacles suggest is fundamentally difficult.
-
-This helps explain why 50+ years of attempts to prove P ≠ NP have failed: the
-missing ingredient is not a clever combinatorial argument but a deep theorem
-about the nature of computation itself.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■  Summary
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-LR-read is assumed because:
-  ✗ We cannot currently prove it from first principles
-  ✗ It may not even be true for all algorithms/encodings
-  ✓ It precisely captures the missing ingredient for the lower-bound argument
-  ✓ Making it explicit clarifies what would be needed for a proof of P ≠ NP
-
-The formalization's value is not in proving P ≠ NP unconditionally, but in
-*isolating the bottleneck* and turning a vague intuition ("you must examine
-both sides") into a precise mathematical statement that can be studied,
-challenged, and potentially proven or refined in future work.
+The remaining sections make this dependency precise, and Section ‹5› summarises
+the three-layer structure (abstract kernel, Cook–Levin bridge, and universal
+LR-read hypothesis) on which the conditional result rests.
 ›
 
 
 section ‹5.  Logical Structure›
 
 text ‹
+This section summarises the logical architecture of the development and makes
+clear which parts are fully proved and which part remains an explicit
+assumption.
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■  The Three-Layer Architecture
+■  Three-Layer Architecture
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-The development consists of three conceptual layers, with clear boundaries
-between what is proven and what is assumed:
-
+The overall structure can be viewed in three layers:
 
 ┌─────────────────────────────────────────────────────────────────────────┐
-│  LAYER 1: Abstract Lower-Bound Kernel                    [FULLY PROVEN] │
-│                                                                           │
-│  Theory: SubsetSum_DecisionTree                                          │
-│  Locale: SubsetSum_Lemma1                                                │
-│                                                                           │
-│  Proves: IF an algorithm satisfies two abstract axioms                   │
-│             (coverage + cost)                                             │
-│          THEN steps(as, s) ≥ 2√(2ⁿ) on hard instances                    │
-│                                                                           │
-│  Method: Combinatorial counting + AM-GM inequality                       │
-│                                                                           │
-│  Status: ✓ Fully verified in Isabelle/HOL                                │
-│          ✓ Mathematically unconditional                                  │
-│          ✓ Makes no claims about real computation                        │
+│  LAYER 1: Abstract Lower-Bound Kernel                    [PROVED]      │
+│                                                                       │
+│  Theory: ‹SubsetSum_DecisionTree›                                    │
+│  Locale: ‹SubsetSum_Lemma1›                                          │
+│                                                                       │
+│  Assumes:                                                            │
+│    • an abstract step function ‹steps›,                              │
+│    • abstract “seen” families ‹seenL›, ‹seenR›,                      │
+│    • axioms:                                                         │
+│        coverage_ex:  ∃k. seenL = LHS(eₖ), seenR = RHS(eₖ)            │
+│        steps_lb:     steps ≥ |seenL| + |seenR|                       │
+│                                                                       │
+│  Proves:                                                             │
+│    steps(as, s) ≥ 2 * sqrt (2^n) for distinct-subset-sum inputs      │
+│                                                                       │
+│  Status:                                                             │
+│    ✓ purely combinatorial                                            │
+│    ✓ fully mechanised in Isabelle/HOL                                │
 └─────────────────────────────────────────────────────────────────────────┘
-                                     ↓
-                      (instantiate axioms with TM objects)
-                                     ↓
+
+The proof uses only the combinatorics of distinct subset sums and the
+arithmetic–geometric mean inequality; it does not refer to any concrete
+computational model.
+
 ┌─────────────────────────────────────────────────────────────────────────┐
-│  LAYER 2: Cook–Levin Bridge                              [FULLY PROVEN] │
-│                                                                           │
-│  Theory: SubsetSum_CookLevin                                             │
-│  Locale: LR_Read_TM                                                      │
-│                                                                           │
-│  Proves: IF a Turing machine satisfies LR-read                           │
-│          THEN it satisfies the Layer 1 axioms                            │
-│          THEREFORE it inherits the 2√(2ⁿ) lower bound                    │
-│                                                                           │
-│  Method: Show that LR-read implies coverage + cost                       │
-│                                                                           │
-│  Status: ✓ Fully verified in Isabelle/HOL                                │
-│          ✓ Conditional on LR-read (explicitly parameterized)             │
-│          ✓ Makes no claim that LR-read is necessary or natural           │
+│  LAYER 2: Cook–Levin Bridge                              [PROVED]      │
+│                                                                       │
+│  Theory: ‹SubsetSum_CookLevin›                                       │
+│  Locale: ‹LR_Read_TM›                                               │
+│                                                                       │
+│  Defines:                                                            │
+│    • ‹steps_TM›, ‹seenL_TM›, ‹seenR_TM› from a fixed machine ‹M›     │
+│      and encoding ‹enc›,                                            │
+│                                                                       │
+│  Assumes (LR-read for this ‹M›):                                     │
+│    • canonical alignment at some split ‹k›,                          │
+│    • linear cost: steps_TM ≥ |seenL_TM| + |seenR_TM|.                │
+│                                                                       │
+│  Proves:                                                             │
+│    • Layer 1 axioms hold with ‹steps = steps_TM›,                    │
+│      ‹seenL = seenL_TM›, ‹seenR = seenR_TM›,                         │
+│    • therefore ‹steps_TM as s ≥ 2 * sqrt (2^n)› on hard instances,   │
+│      and no single polynomial can bound ‹steps_TM› on all            │
+│      distinct-subset-sum inputs.                                     │
+│                                                                       │
+│  Status:                                                             │
+│    ✓ fully mechanised implication “LR-read ⇒ inherits lower bound”   │
+│    ✓ conditional on LR-read for this particular solver ‹M›           │
 └─────────────────────────────────────────────────────────────────────────┘
-                                     ↓
-                  (apply to all possible TM solvers)
-                                     ↓
+
+Layer 2 shows that, for any fixed machine satisfying LR-read, the abstract
+kernel from Layer 1 applies and yields a √(2ⁿ) lower bound.  This is still
+a conditional statement: it does not assert that every solver satisfies LR-read,
+only that LR-read suffices to trigger the bound.
+
 ┌─────────────────────────────────────────────────────────────────────────┐
-│  LAYER 3: Universal Claim                                  [ASSUMED]    │
-│                                                                           │
-│  Theory: SubsetSum_PneqNP                                                │
-│  Statement: Every TM solver for SUBSET–SUM satisfies LR-read            │
-│                                                                           │
-│  Implies: SUBSET–SUM ∉ P, therefore P ≠ NP                               │
-│                                                                           │
-│  Status: ✗ NOT proven                                                    │
-│          ✗ NOT obviously true                                            │
-│          ✗ May be false for clever algorithms/encodings                  │
-│          ? Subject of ongoing investigation                              │
+│  LAYER 3: Universal LR-Read Hypothesis                  [ASSUMED]     │
+│                                                                       │
+│  Theory: ‹SubsetSum_PneqNP›                                          │
+│                                                                       │
+│  Hypothesis (‹LR_read_all_solvers_hypothesis enc0›):                 │
+│    • If SUBSET–SUM ∈ ‹𝒫› (for some encoding ‹enc0›), then there      │
+│      exists a Cook–Levin solver ‹M› with polynomial running time;    │
+│    • Every such solver ‹M› satisfies LR-read, i.e. belongs to        │
+│      ‹LR_Read_TM› for some ‹seenL›, ‹seenR›.                         │
+│                                                                       │
+│  Together with:                                                      │
+│    • SUBSET–SUM ∈ ‹𝒩𝒫› (proved via ‹SS_Verifier_NP›),                │
+│                                                                       │
+│  this implies the core conditional theorem:                          │
+│                                                                       │
+│      LR_read_all_solvers_hypothesis enc0  ⟹  ¬ P_eq_NP.             │
+│                                                                       │
+│  Status:                                                             │
+│    ✗ not proved in this development                                  │
+│    ✗ a substantive modelling assumption about all solvers            │
 └─────────────────────────────────────────────────────────────────────────┘
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■  What Each Layer Contributes
+■  What Is and Is Not Established
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-**Layer 1: Pure mathematics**
+Summarising the status of the main statements:
 
-This layer is model-agnostic.  It defines abstract functions steps, seenL,
-seenR and two axioms:
+  ✓ Fully proved in Isabelle/HOL:
 
-  coverage_ex: ∃k. seenL as s k = LHS(eₖ) ∧ seenR as s k = RHS(eₖ)
-  steps_lb:    steps as s ≥ |seenL as s k| + |seenR as s k|
+    • The abstract √(2ⁿ) lower bound in ‹SubsetSum_Lemma1› under the
+      coverage and cost axioms;
 
-From these axioms alone, it derives steps ≥Continue2√(2ⁿ) using:
-• Cardinality of LHS and RHS (depends on distinct subset sums)
-• AM-GM inequality (2^k + 2^(n-k) ≥ 2√(2ⁿ))
-This is a hypothetical-conditional proof: "in any world where these axioms
-hold, this bound follows."  It makes no claim about whether such a world exists.
-Layer 2: Computational interpretation
-This layer interprets the abstract axioms in terms of Turing machine behavior:
-steps_TM as s    := steps_CL M (enc as s)     [machine's runtime]
-seenL_TM as s k  := [values M's behavior distinguishes on L side]
-seenR_TM as s k  := [values M's behavior distinguishes on R side]
-The locale LR_Read_TM assumes these concrete definitions satisfy the Layer 1
-axioms.  It then invokes Layer 1's theorem to conclude:
-"Any TM satisfying LR-read requires 2√(2ⁿ) steps on hard instances."
-This is still conditional—it's an implication, not an existence claim.  We've
-shown that if such a machine exists, then it must be slow.
-Layer 3: Universal quantification
-This layer makes the existential claim:
-"All TM solvers for SUBSET–SUM satisfy LR-read."
-Combined with Layer 2, this would prove:
-• All TM solvers require 2√(2ⁿ) time on hard instances
-• Therefore no polynomial-time solver exists
-• Therefore SUBSET–SUM ∉ P
-• Therefore P ≠ NP (since SUBSET–SUM ∈ NP)
-But Layer 3's claim is not proven.  It's a hypothesis about the structure of
-all possible algorithms.  The formalization makes this hypothesis explicit via
-the definition LR_read_all_solvers_hypothesis.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■  The Proof Obligations
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-To complete the argument for P ≠ NP, one would need to discharge the Layer 3
-assumption.  This requires proving:
-∀M, q₀, enc. CL_SubsetSum_Solver M q₀ enc
-⟹  ∃seenL, seenR. LR_Read_TM M q₀ enc seenL seenR
-In words: "for every correct Turing-machine solver, there exist concrete
-definitions of seenL and seenR such that the LR-read axioms hold."
-This is a universal claim over an infinite space of possible machines and
-encodings.  Standard approaches to such claims include:
-1. Direct construction:
-Given an arbitrary machine M, explicitly construct seenL_TM and seenR_TM
-from M's transition function and prove they satisfy LR-read.
-Challenge: M might not cleanly separate L and R information—it might
-compress, interleave, or transform the representation in arbitrary ways.
-2. Indirect argument:
-Prove that any machine violating LR-read must give wrong answers on some
-instance.
-Challenge: This requires showing that checking L = R fundamentally requires
-the LR-read information flow, but clever encodings might allow shortcuts.
-3. Model restriction:
-Restrict to a subclass of machines (e.g., "oblivious" or "comparison-based")
-where LR-read can be proven, then argue this restriction is without loss of
-generality.
-Challenge: Proving "WLOG" for algorithm classes is notoriously difficult—
-any restriction might exclude the clever algorithm that solves the problem
-efficiently.
-None of these approaches has succeeded yet, which is why Layer 3 remains
-an assumption.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■  Comparison to Other Conditional Results
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Many important theorems in complexity theory are conditional:
-• P ≠ NP ⟹ NP ≠ coNP
-• Strong exponential time hypothesis ⟹ 3-SAT requires 2^(n-o(n)) time
-• Hardness of factoring ⟹ RSA is secure
-These are valuable because:
-✓ The assumptions are well-studied conjectures, not ad-hoc conditions
-✓ The implications connect different areas (giving a web of consequences)
-✓ Disproving the assumption would itself be a major result
-The present work is different:
-LR-read ⟹ P ≠ NP
-✗ LR-read is not a standard conjecture; it's introduced for this proof
-✗ LR-read is at least as strong as P ≠ NP (arguably a restatement)
-✗ Disproving LR-read would just mean "we found an algorithm violating it"
-which is expected anyway
-So this conditional result is less informative than standard complexity-theoretic
-reductions.  Its value lies elsewhere: in clarifying what needs to be proven.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■  Practical Implications of the Layered Structure
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-For mechanized verification:
-The layered design is excellent software engineering.  Each layer has a clean
-interface (locale signature) and clear dependencies.  If Layer 3 were ever
-proven, the mechanized Layers 1-2 would immediately produce a verified proof
-of P ≠ NP with no additional verification burden.
-For mathematical understanding:
-The separation clarifies where the difficulty lies.  It's NOT in:
-• The combinatorial counting (Layer 1)
-• The decision-tree to Turing-machine translation (Layer 2)
-The difficulty is entirely in Layer 3: proving that all algorithms must follow
-a particular information-flow pattern.  This is a computational claim, not
-a combinatorial claim, which explains why techniques from graph theory,
-number theory, or discrete math have not sufficed.
-For future work:
-The structure suggests research directions:
-• Can Layer 3 be proven for restricted algorithm classes?
-• Can LR-read be weakened while preserving the lower bound?
-• Are there alternative structural properties (not LR-read) that also imply
-the Layer 1 axioms?
-• Can we prove Layer 3 is unprovable via certain techniques (e.g., showing
-it requires overcoming the natural proofs barrier)?
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-■  Summary: What Is and Isn't Established
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✓  Proven: The mathematical implication chain (Layers 1-2)
-✓  Proven: The formal machinery connecting decision trees to TMs
-✓  Proven: The 2√(2ⁿ) bound under explicit axioms
-✗  Not proven: That any real algorithm satisfies those axioms (Layer 3)
-✗  Not proven: That LR-read is a reasonable or necessary constraint
-✗  Not proven: P ≠ NP (unconditionally)
-?  Open question: Can Layer 3 be proven, weakened, or circumvented?
-?  Open question: Is this approach fundamentally limited by known barriers?
-The formalization's contribution is making this structure explicit and precise,
-turning a vague research program into a concrete proof obligation.
-›
+    • The Cook–Levin bridge: any machine satisfying LR-read (for given
+      ‹as, s› and ‹enc›) satisfies these axioms, and therefore inherits
+      the lower bound on distinct-subset-sum inputs;
 
-section ‹5.  Logical Structure›
+    • SUBSET–SUM ∈ ‹𝒩𝒫› for suitable encodings ‹enc0› via the
+      ‹SS_Verifier_NP› locale;
 
-text ‹
-The development consists of three layers:
+    • The conditional implication:
 
-(1)  Lower-bound kernel — *proved*
-        SubsetSum_DecisionTree and SubsetSum_Lemma1 give a √(2^n) bound
-        from abstract axioms.
+          LR_read_all_solvers_hypothesis enc0  ⟹  ¬ P_eq_NP.
 
-(2)  Cook–Levin bridge — *proved*
-        LR_Read_TM shows how a solver’s information flow induces the
-        seenL_TM / seenR_TM sets required by the abstract axioms.
+  ✗ Not proved (and currently open):
 
-(3)  Modeling assumption — *not proved*
-        Every solver must satisfy LR-read.
+    • That every Turing-machine solver for SUBSET–SUM satisfies LR-read
+      for its chosen encoding;
 
-Together:
+    • That LR-read is an unavoidable or “natural” constraint on real
+      algorithms or encodings;
 
-      If SUBSET–SUM ∈ P and all solvers satisfy LR-read, then P ≠ NP.
+    • P ≠ NP as an unconditional statement.
+
+The value of the present formalisation is therefore not to claim a proof of
+P ≠ NP, but to decompose one proposed strategy into:
+
+  • a fully mechanised lower-bound engine, and
+
+  • a single, sharply stated modelling hypothesis (LR-read) on which the
+    conditional separation depends.
+
+Any future progress on the LR-read hypothesis—whether in the direction of
+justifying it, refuting it, or replacing it by a weaker but still sufficient
+property—can be plugged directly into this framework, with the rest of the
+argument already verified by Isabelle/HOL.
 ›
 
 
