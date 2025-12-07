@@ -131,17 +131,18 @@ possible R-values.  These canonical sets are written:
 
       LHS(eₖ as s)    and    RHS(eₖ as s).
 
-Even when none of the L-values equals any of the R-values, the solver must still 
-discriminate among all these possibilities.  Since the solver never sees the 
-choice vector xs, each candidate L-value is one that could arise from some prefix 
-xs[0..k−1], and each candidate R-value is one that could arise from some suffix 
-xs[k..n−1]. To decide whether any equality L = R can occur, the solver must obtain 
-enough information from the encoded instance to rule out (or confirm) each of these
-candidates.  Consequently, it must gather enough information to distinguish
-all 2^k prefix-derived L-values and all 2^(n−k) suffix-derived R-values.
+Even when none of the L-values equals any of the R-values, the solver must still
+discriminate among all these possibilities.  Since the solver never sees the
+choice vector xs, each candidate L-value is one that could arise from some
+prefix xs[0..k−1], and each candidate R-value is one that could arise from some
+suffix xs[k..n−1].  To determine whether any equality L = R is possible, the
+solver must obtain enough information from the encoded instance to rule out or
+confirm each of these candidates.  Consequently, it must gather enough
+information to distinguish all 2^k prefix-derived L-values and all 2^(n−k)
+suffix-derived R-values.
 
 To express this notion inside the Cook–Levin machine model, we examine how the
-machine’s behaviour changes when we modify the input in ways that alter only
+machine’s behaviour changes when the input is modified in ways that alter only
 prefix-relevant information (affecting L but not R) or only suffix-relevant
 information (affecting R but not L).  This leads to the definitions:
 
@@ -163,13 +164,13 @@ The LR-read hypothesis asserts that, for every distinct-subset-sum instance
       seenL_TM as s k = LHS(eₖ as s)
       seenR_TM as s k = RHS(eₖ as s).
 
-Thus the machine’s observable behaviour must distinguish precisely all
-canonical L-values and all canonical R-values.  It neither misses any nor
-creates non-canonical distinctions.  This expresses, in rigorous form, the 
-idea that a solver must obtain enough input information to determine
-the status of every left candidate and every right candidate. This ensures that 
-the solver’s information flow aligns with the same decomposition that drives the 
-abstract decision-tree lower bound.
+Thus the machine’s observable behaviour must distinguish precisely all canonical
+L-values and all canonical R-values.  It neither misses any nor creates
+non-canonical distinctions.  This expresses, in rigorous form, the idea that a
+solver must obtain enough input information to determine the status of every
+candidate L-value and every candidate R-value.  This ensures that the solver’s
+information flow aligns with the same decomposition that drives the abstract
+decision-tree lower bound.
 
 -------------------------------------------------------------------------------
 ■  The cost principle
@@ -199,100 +200,56 @@ decision-tree lower bound to Cook–Levin Turing machines.
 section ‹4.  Why LR-read is Assumed›
 
 text ‹
-The LR-read property is a modeling assumption: we do not attempt to prove that
-every Turing-machine solver for SUBSET–SUM satisfies it.  This section explains
-three points:
-
-  • why LR-read is a natural strengthening of the intuitive idea that to decide
-    L = R one must obtain information about both L and R;
-
-  • why LR-read is not expected to be derivable from general principles of
-    computability or adversary arguments;
-
-  • how this relates to Gregory Chaitin’s perspective on mathematical axioms and
-    unprovability (cf. “Thoughts on the Riemann Hypothesis”, arXiv:math/0306042).
+The LR-read property is a modelling assumption: this theory does not attempt to
+prove that every Turing-machine solver for SUBSET–SUM satisfies it.  The purpose
+of this section is to explain **why** LR-read is not expected to be derivable
+from general adversary arguments in the full Turing-machine model, and thus why
+it is taken as an explicit structural hypothesis.
 
 -------------------------------------------------------------------------------
-■  Why LR-read is a natural strengthening of the intuitive principle
+■  Why adversary arguments cannot enforce LR-read
 -------------------------------------------------------------------------------
 
-In SUBSET–SUM, the expressions
+A natural hope is to prove LR-read using an adversary principle: if a solver
+fails to distinguish the canonical L-values or R-values, then an adversary
+should be able to force incorrect behaviour.  This kind of reasoning works in
+the decision-tree model, where the solver’s access to the input is restricted to
+reading individual symbols in a fixed structure.
 
-      L = ∑ᵢ₍ᵢ<ₖ₎ as!i * xs!i     and     R = s − ∑ᵢ₍ᵢ≥ₖ₎ as!i * xs!i
+However, in the Turing-machine setting this strategy fails.
 
-are not fixed numbers.  Because the solver never sees the choice vector xs, each
-of L and R ranges over exponentially many values as xs varies:
+A Turing machine may transform its input in highly non-local ways — compressing,
+hashing, permuting, interleaving, or encoding it into derived internal states —
+and may base its decisions on these transformed representations.  These internal
+representations are not visible to an adversary.  As a result:
 
-      LHS(eₖ as s) contains 2^k values,
-      RHS(eₖ as s) contains 2^(n−k) values.
+  • the adversary cannot guarantee that hiding or modifying particular bits of
+    the original encoding prevents the machine from recovering information about
+    the prefix-derived L-values or suffix-derived R-values; and
 
-To decide whether L = R, the solver must rule out many of these possibilities on
-each side.  LR-read formalises this requirement by postulating that, for some
-split k, the solver’s observable behaviour distinguishes *exactly* the canonical
-families LHS(eₖ as s) and RHS(eₖ as s).  This aligns its information flow with
-the combinatorial structure that drives the √(2^n) lower bound.
+  • indistinguishability arguments cannot force the machine to acquire
+    information according to the **canonical** prefix/suffix decomposition that
+    underlies the LHS(eₖ) and RHS(eₖ) families.
 
--------------------------------------------------------------------------------
-■  Why LR-read is not provable by adversary or diagonal arguments
--------------------------------------------------------------------------------
-
-One might hope to *prove* LR-read using an adversary argument: if a solver never
-obtains enough information to distinguish the canonical L- and R-values, the
-adversary should be able to force incorrect behaviour.  However, in the
-Turing-machine setting this strategy breaks down.
-
-A Turing machine may transform its input in arbitrarily complex ways—compress,
-hash, fold, interleave, or encode it into new forms—and it can base its
-computation on such transformations rather than on cleanly separated “L-sections”
-and “R-sections” of the input.  Because these internal representations are not
-visible to the adversary, an adversary cannot guarantee that hiding or altering
-a specific set of input bits prevents the machine from inferring some combined
-property of L and R.
-
-This is closely related to a broader theme in computability theory: many
-structural properties of Turing-machine behaviour cannot be forced by
-adversarial indistinguishability arguments alone.  While classical Rice-style
-results do not apply directly — LR-read is not a semantic property of a
-language — they illustrate the same phenomenon: Turing machines can compute in
-ways that are opaque to combinatorial reasoning imposed on their input formats.
-Thus no current general method is capable of proving a principle as specific as
-LR-read for *all* Turing-machine solvers.
-
-For this reason, LR-read is treated as an explicit external axiom: a deliberately
-strengthened information-flow requirement chosen to match the combinatorial
-conditions of the decision-tree lower bound.
+This reflects a general limitation of adversary-style lower-bound methods for
+arbitrary Turing machines: they cannot enforce that information must be acquired
+via a particular structural pattern.
 
 -------------------------------------------------------------------------------
-■  A Chaitin-style perspective on axioms and unprovability
+■  LR-read as an explicit structural hypothesis
 -------------------------------------------------------------------------------
 
-In his article “Thoughts on the Riemann Hypothesis” (arXiv:math/0306042),
-Gregory Chaitin argues that even classical number theory contains natural
-statements whose truth cannot be proven from the usual axioms.
-His message is that some global structural facts—especially those involving
-Diophantine equations or deep analytic behaviour—may require new axioms
-because no finite formal system can encode all of the information needed to
-derive them.
+Because adversary techniques cannot impose the canonical left/right information
+pattern required by the decision-tree lower bound, LR-read is introduced as a
+deliberate modelling assumption.  It asserts that, on distinct-subset-sum
+instances, the solver’s observable behaviour distinguishes exactly the canonical
+families LHS(eₖ as s) and RHS(eₖ as s) at some split k.
 
-The LR-read principle plays an analogous role in this development.
-It asserts a structural constraint on how SUBSET–SUM solvers must extract
-information from their inputs in order to decide whether a prefix-derived
-L-value can ever equal a suffix-derived R-value. This constraint is mathematically 
-natural once the combinatorics of canonically split equations is examined, 
-but—just as in Chaitin’s examples—it cannot presently be derived from the 
-bare Turing-machine semantics that Isabelle formalises.
-
-Accordingly, LR-read is taken here as an explicit axiom describing the
-information pattern that any solver must satisfy on the hard family of
-instances. Once accepted, this single structural assumption unlocks the rest of the
-formal argument: the √(2^n) lower bound follows automatically from the
-decision-tree theory, and the Cook–Levin bridge lifts that bound to Turing
-machines.
-
-Thus, LR-read occupies the same philosophical position that Chaitin highlights:
-a natural, high-level principle about the structure of a problem—one that may
-lie beyond what can be proven in the underlying formal system, but whose
-adoption yields strong and otherwise unreachable consequences.
+This assumption isolates the precise structural condition under which the
+decision-tree √(2^n) lower bound transfers to the Cook–Levin Turing-machine
+model.  All other components — the combinatorial reasoning, the Cook–Levin
+semantics, and the NP-verifier construction — are fully mechanised without any
+additional assumptions.
 ›
 
 
