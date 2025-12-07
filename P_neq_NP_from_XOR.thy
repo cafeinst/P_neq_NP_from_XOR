@@ -5,7 +5,7 @@ begin
 text ‹
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                            %
-%        A CONDITIONAL PROOF THAT P != NP FROM AN INFORMATION-FLOW PRINCIPLE %
+%        A CONDITIONAL PROOF THAT P ≠ NP FROM AN INFORMATION-FLOW PRINCIPLE %
 %                                                                            %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -36,12 +36,12 @@ Since √(2^n) grows faster than any polynomial, this yields the conditional
 statement:
 
       If every polynomial-time solver for SUBSET–SUM satisfies LR-read,
-      then P != NP.
+      then P ≠ NP.
 
 All mathematics behind the lower bound — decision-tree adversary reasoning,
 the Cook–Levin Turing-machine semantics, and the NP verifier for SUBSET–SUM —
-is fully mechanised.  LR-read itself is the only non-mechanised assumption,
-made explicit and never used implicitly.
+is fully mechanised.  LR-read itself is the only non-mechanised (non-derived) 
+assumption, made explicit and never used implicitly.
 
 AI systems (ChatGPT and Claude) assisted in structuring the presentation,
 improving exposition, and refining comments, while all formal proofs are
@@ -201,55 +201,51 @@ section ‹4.  Why LR-read is Assumed›
 
 text ‹
 The LR-read property is a modelling assumption: this theory does not attempt to
-prove that every Turing-machine solver for SUBSET–SUM satisfies it.  The purpose
-of this section is to explain **why** LR-read is not expected to be derivable
-from general adversary arguments in the full Turing-machine model, and thus why
-it is taken as an explicit structural hypothesis.
+derive it for all Turing-machine solvers of SUBSET–SUM.  The purpose of this
+section is to explain **why** LR-read is not expected to follow from general
+adversary arguments in the unrestricted Turing-machine model, and therefore why
+it is introduced as an explicit structural hypothesis.
 
 -------------------------------------------------------------------------------
 ■  Why adversary arguments cannot enforce LR-read
 -------------------------------------------------------------------------------
 
-A natural hope is to prove LR-read using an adversary principle: if a solver
-fails to distinguish the canonical L-values or R-values, then an adversary
-should be able to force incorrect behaviour.  This kind of reasoning works in
-the decision-tree model, where the solver’s access to the input is restricted to
-reading individual symbols in a fixed structure.
+One might hope to prove LR-read by an adversary principle: if a solver does not
+distinguish the canonical L-values or R-values, then an adversary should be able
+to force an incorrect decision.  This reasoning succeeds in the decision-tree
+(query) model, where the algorithm’s access to its input is tightly restricted:
+it learns only the symbols it explicitly queries, and the adversary controls the
+remaining, unqueried information.
 
-However, in the Turing-machine setting this strategy fails.
+In the Turing-machine model, this strategy breaks down completely.
 
-A Turing machine may transform its input in highly non-local ways — compressing,
-hashing, permuting, interleaving, or encoding it into derived internal states —
-and may base its decisions on these transformed representations.  These internal
-representations are not visible to an adversary.  As a result:
+A Turing machine is free to inspect, copy, permute, compress, hash, or otherwise
+reorganise its input tape, and may base its choices on these derived internal
+representations.  Crucially, these representations are **not** visible to an
+adversary, nor can an adversary influence the machine’s information-flow once
+the computation begins.  As a result:
 
-  • the adversary cannot guarantee that hiding or modifying particular bits of
-    the original encoding prevents the machine from recovering information about
-    the prefix-derived L-values or suffix-derived R-values; and
+  • an adversary cannot ensure that withholding or modifying particular bits of
+    the *original* encoding prevents the machine from reconstructing information
+    relevant to prefix-derived L-values or suffix-derived R-values; and
 
   • indistinguishability arguments cannot force the machine to acquire
-    information according to the **canonical** prefix/suffix decomposition that
-    underlies the LHS(eₖ) and RHS(eₖ) families.
+    information according to the **canonical** L/R decomposition that underlies
+    the sets ‹LHS(eₖ)› and ‹RHS(eₖ)›.
 
-This reflects a general limitation of adversary-style lower-bound methods for
-arbitrary Turing machines: they cannot enforce that information must be acquired
-via a particular structural pattern.
+A useful analogy is the following.  In the decision-tree model, the solver
+queries bits one at a time, much like a player who uncovers one card at a time
+while the adversary keeps the others hidden.  The adversary can withhold or
+reveal information adaptively, which is exactly what adversary proofs exploit.
+A Turing machine, by contrast, begins the game with **all cards already face up
+on the table**: the entire input is present from the start, and the machine may
+examine and reorganise it at will.  Once all cards are visible, the adversary
+has no strategic power left.
 
--------------------------------------------------------------------------------
-■  LR-read as an explicit structural hypothesis
--------------------------------------------------------------------------------
-
-Because adversary techniques cannot impose the canonical left/right information
-pattern required by the decision-tree lower bound, LR-read is introduced as a
-deliberate modelling assumption.  It asserts that, on distinct-subset-sum
-instances, the solver’s observable behaviour distinguishes exactly the canonical
-families LHS(eₖ as s) and RHS(eₖ as s) at some split k.
-
-This assumption isolates the precise structural condition under which the
-decision-tree √(2^n) lower bound transfers to the Cook–Levin Turing-machine
-model.  All other components — the combinatorial reasoning, the Cook–Levin
-semantics, and the NP-verifier construction — are fully mechanised without any
-additional assumptions.
+This captures a general limitation of adversary-style lower bounds for
+unrestricted Turing machines: they cannot mandate *how* information must be
+obtained.  Structural constraints like LR-read cannot be enforced by adversary
+arguments alone and must, therefore, be introduced explicitly. 
 ›
 
 
@@ -267,8 +263,9 @@ The development is organised in three layers:
       distinguishability sets ‹seenL_TM› and ‹seenR_TM› required by the
       abstract lemma.
 
-  (3) Modeling assumption — *not proved*
-      Every solver for SUBSET–SUM satisfies LR-read.
+  (3) Modeling assumption — not proved
+      Every Cook–Levin Turing-machine solver for SUBSET–SUM (with encoding enc0)
+      satisfies LR-read.
 
 Together these yield the conditional implication:
 
