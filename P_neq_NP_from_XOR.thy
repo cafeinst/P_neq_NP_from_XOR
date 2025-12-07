@@ -131,12 +131,12 @@ possible R-values.  These canonical sets are written:
 
       LHS(eₖ as s)    and    RHS(eₖ as s).
 
-Even when no L equals any R, the solver must still discriminate among all
-these possibilities.  Since it does not know the choice vector xs, each
-candidate L-value is one that could arise from some prefix xs[0..k−1], and
-each candidate R-value is one that could arise from some suffix xs[k..n−1].
-To decide whether any equality L = R can occur, the solver must obtain enough
-information from the encoded instance to rule out (or confirm) each of these
+Even when none of the L-values equals any of the R-values, the solver must still 
+discriminate among all these possibilities.  Since the solver never sees the 
+choice vector xs, each candidate L-value is one that could arise from some prefix 
+xs[0..k−1], and each candidate R-value is one that could arise from some suffix 
+xs[k..n−1]. To decide whether any equality L = R can occur, the solver must obtain 
+enough information from the encoded instance to rule out (or confirm) each of these
 candidates.  Consequently, it must gather enough information to distinguish
 all 2^k prefix-derived L-values and all 2^(n−k) suffix-derived R-values.
 
@@ -165,9 +165,11 @@ The LR-read hypothesis asserts that, for every distinct-subset-sum instance
 
 Thus the machine’s observable behaviour must distinguish precisely all
 canonical L-values and all canonical R-values.  It neither misses any nor
-creates non-canonical distinctions.  This expresses, in a rigorous form, the
-idea that a solver for L = R must obtain enough input information to determine
-the status of every left candidate and every right candidate.
+creates non-canonical distinctions.  This expresses, in rigorous form, the 
+idea that a solver must obtain enough input information to determine
+the status of every left candidate and every right candidate. This ensures that 
+the solver’s information flow aligns with the same decomposition that drives the 
+abstract decision-tree lower bound.
 
 -------------------------------------------------------------------------------
 ■  The cost principle
