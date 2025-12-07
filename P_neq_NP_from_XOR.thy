@@ -94,82 +94,86 @@ section ‹3.  From Decision Trees to Cook–Levin Turing Machines›
 
 text ‹
 A Cook–Levin Turing machine is far more flexible than a decision tree: it may
-scan, move, rewrite, or revisit input cells arbitrarily.  Thus the abstract
-decision-tree lower bound does *not* automatically apply to machines.  To
-transfer it, we must express the same information-flow constraints inside the
-Cook–Levin model.
+reorder, copy, compress, or interleave parts of its input tape.  Therefore,
+the decision-tree lower bound does not automatically carry over.
 
-This bridge is provided by the locale ‹LR_Read_TM›.
+To bridge this gap, the theory ‹SubsetSum_CookLevin› introduces the locale
+‹LR_Read_TM›.  Its purpose is to formalise—within the Cook–Levin TM model—the
+informal principle stated at the beginning of the theory:
 
-──────────────────────────────────────────────────────────────────────────────
-Informal principle
-──────────────────────────────────────────────────────────────────────────────
+      “To decide whether two quantities L and R are equal,
+       a solver must read at least one bit encoding L
+       and at least one bit encoding R.”
 
-    “To decide L = R, a solver must actually read information
-     coming from the L-zone and from the R-zone of the input encoding.”
+For SUBSET–SUM, these quantities L and R arise from the canonical split of the
+verification equation at position k:
 
-If two different L-values always drive the solver along the same execution
-path, then the solver has *not* extracted information from the L-zone: those
-L-values are behaviourally indistinguishable.  The same reasoning applies to
-the R-zone.
+      L = ∑ᵢ₍ᵢ<ₖ₎ as!i * xs!i          (determined by prefix choices xs[0..k−1])
+      R = s − ∑ᵢ₍ᵢ≥ₖ₎ as!i * xs!i      (determined by suffix choices xs[k..n−1]).
 
-──────────────────────────────────────────────────────────────────────────────
-Turning the informal idea into a precise requirement
-──────────────────────────────────────────────────────────────────────────────
+Thus “bits encoding L” refers to the part of the encoded instance that affects
+possible L-values when xs varies; similarly for R.  We call these semantic
+regions of the input the **L-zone** and **R-zone**.  They need not appear
+contiguously on the tape—the point is simply that changing L-zone bits changes
+L but not R, and changing R-zone bits changes R but not L.
 
-Inside ‹LR_Read_TM›, this idea is made concrete by defining, for each split
-index k:
+-------------------------------------------------------------------------------
+■  Distinguishable values: what the machine actually learns
+-------------------------------------------------------------------------------
 
-  • ‹seenL_TM as s k› — the set of canonical LHS values the machine
-    behaviourally distinguishes when we vary only the prefix bits of a virtual
-    completion xs;
+A Turing machine never sees the choice vector xs.  Instead, we observe how its
+behaviour changes if the input is modified in ways that alter only L-zone or
+only R-zone information.  This leads to the definitions:
 
-  • ‹seenR_TM as s k› — the corresponding set of distinguishable RHS values
-    obtained by varying only the suffix bits of xs.
+  • ‹seenL_TM as s k› = the set of canonical L-values the machine’s behaviour
+    can distinguish at split k;
 
-These sets capture exactly what the machine has *learned* from the L-zone and
-the R-zone of the encoded input.
+  • ‹seenR_TM as s k› = the analogous set of distinguishable R-values.
 
-The LR-read hypothesis strengthens the informal principle into a precise
-requirement: on every distinct-subset-sum instance (as, s) there exists some k
-such that
+Intuitively, these sets measure what the machine has effectively *learned*
+about the left and right quantities L and R from the bits it has read.
+
+-------------------------------------------------------------------------------
+■  LR-read: the formal counterpart of the informal principle
+-------------------------------------------------------------------------------
+
+The LR-read hypothesis strengthens the informal slogan into the precise
+requirement that, for every distinct-subset-sum instance (as,s), there exists
+a split k such that
 
       seenL_TM as s k = LHS(eₖ as s)
       seenR_TM as s k = RHS(eₖ as s).
 
-At this “critical split,” the machine’s behaviour distinguishes *all* and only
-the canonical LHS/RHS values arising from varying prefix/suffix bits of xs.
-This is the exact formal counterpart of the slogan “the solver really reads the
-L-zone and the R-zone.”
+This is the formal expression of:
 
-──────────────────────────────────────────────────────────────────────────────
-Cost axiom
-──────────────────────────────────────────────────────────────────────────────
+      “The solver must read information encoding L and R.”
 
-A second LR-Read axiom captures the cost principle:
+The equalities assert two things:
+
+  • the machine distinguishes *all* canonical L- and R-values (it has truly
+    obtained enough information to decide L = R), and
+
+  • it distinguishes *exactly* these values (its information flow matches the
+    canonical L/R structure rather than some unrelated decomposition).
+
+-------------------------------------------------------------------------------
+■  The cost principle
+-------------------------------------------------------------------------------
+
+The second LR-read axiom states:
 
       steps_TM as s ≥ |seenL_TM as s k| + |seenR_TM as s k|.
 
-Each distinguishable L-value costs at least one unit of work, and so does each
-distinguishable R-value.
+Each distinguishable canonical value requires at least one unit of work.
 
-──────────────────────────────────────────────────────────────────────────────
-Recovering the decision-tree lower bound
-──────────────────────────────────────────────────────────────────────────────
+With the equalities above, this yields:
 
-For distinct-subset-sum inputs we know:
+      |seenL_TM| = 2^k,       |seenR_TM| = 2^(n−k),
+      steps_TM as s ≥ 2^k + 2^(n−k) ≥ 2 * sqrt(2^n).
 
-      |LHS(eₖ as s)| = 2^k,
-      |RHS(eₖ as s)| = 2^(n − k).
-
-Therefore, when the LR-read equalities hold, we obtain
-
-      steps_TM as s ≥ 2^k + 2^(n − k) ≥ 2 * sqrt(2^n).
-
-Hence the Cook–Levin machine inherits *exactly* the √(2^n) lower bound from
-the abstract decision-tree model.  The locale ‹LR_Read_TM› is the mechanism
-that allows us to instantiate ‹SubsetSum_Lemma1› with concrete Cook–Levin TM
-data.
+Thus LR-read allows us to instantiate ‹SubsetSum_Lemma1› using
+‹steps = steps_TM›, transferring the √(2^n) lower bound from the abstract
+decision-tree setting to Cook–Levin Turing machines.
 ›
 
 
