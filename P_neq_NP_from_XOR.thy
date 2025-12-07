@@ -131,15 +131,16 @@ possible R-values.  These canonical sets are written:
 
       LHS(eₖ as s)    and    RHS(eₖ as s).
 
-Even when none of the L-values equals any of the R-values, the solver must still
-discriminate among all these possibilities.  Since the solver never sees the
-choice vector xs, each candidate L-value is one that could arise from some
-prefix xs[0..k−1], and each candidate R-value is one that could arise from some
-suffix xs[k..n−1].  To determine whether any equality L = R is possible, the
-solver must obtain enough information from the encoded instance to rule out or
-confirm each of these candidates.  Consequently, it must gather enough
-information to distinguish all 2^k prefix-derived L-values and all 2^(n−k)
-suffix-derived R-values.
+Even when no L-value equals any R-value, the solver must still distinguish all
+these possibilities. The solver is not given a 0/1 vector xs; instead, it
+must reason about all subset choices that xs could represent. Each possible
+L-value is one that arises from some choice of the prefix bits xs[0..k−1], and
+each possible R-value is one that arises from some choice of the suffix bits
+xs[k..n−1]. To determine whether an equality L = R is possible for any
+subset, the solver must obtain enough information from the encoded instance
+(as, s) to confirm or rule out every candidate L-value and every candidate
+R-value. Consequently, it must distinguish all 2^k prefix-derived L-values
+and all 2^(n−k) suffix-derived R-values.
 
 To express this notion inside the Cook–Levin machine model, we examine how the
 machine’s behaviour changes when the input is modified in ways that alter only
@@ -233,14 +234,18 @@ the computation begins.  As a result:
     information according to the **canonical** L/R decomposition that underlies
     the sets ‹LHS(eₖ)› and ‹RHS(eₖ)›.
 
-A useful analogy is the following.  In the decision-tree model, the solver
-queries bits one at a time, much like a player who uncovers one card at a time
-while the adversary keeps the others hidden.  The adversary can withhold or
-reveal information adaptively, which is exactly what adversary proofs exploit.
-A Turing machine, by contrast, begins the game with **all cards already face up
-on the table**: the entire input is present from the start, and the machine may
-examine and reorganise it at will.  Once all cards are visible, the adversary
-has no strategic power left.
+A useful analogy is the following. In the decision-tree model, the solver uncovers 
+information one bit at a time — much like a player in a hidden-information card 
+game (such as poker) who turns over one card while the opponent keeps the remaining 
+cards concealed. The adversary can decide which cards stay hidden and which are 
+revealed, and adversary proofs rely precisely on this ability to control information 
+flow.
+
+A Turing machine, by contrast, begins the game with all cards already face up: the 
+entire input is visible from the start. The machine may then sort, copy, compress, and 
+reorganise these cards internally in ways the adversary cannot observe or influence. 
+Once all cards are face up, the adversary has no strategic power left — the solver 
+can examine and process the information however it chooses.
 
 This captures a general limitation of adversary-style lower bounds for
 unrestricted Turing machines: they cannot mandate *how* information must be
