@@ -113,9 +113,9 @@ explicitly axiomatic condition — LR-read — that is inspired by the idea
        a solver must read at least one bit encoding L
        and at least one bit encoding R,”
 
-but goes well beyond it.  LR-read is chosen precisely because it is strong
-enough to fit the abstract assumptions of ‹SubsetSum_Lemma1› and therefore
-to support the √(2^n) lower bound.
+but goes well beyond it.  LR-read is formulated so that, once assumed, it 
+fits the abstract assumptions of ‹SubsetSum_Lemma1› and thereby supports the √(2^n)
+lower bound.
 
 For SUBSET–SUM, the quantities L and R arise from the canonical split of the
 verification equation at position k:
