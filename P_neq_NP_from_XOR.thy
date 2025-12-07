@@ -26,6 +26,13 @@ The information-flow principle is intuitive:
       a solver must read at least one bit of the input encoding L
       and at least one bit encoding R.
 
+In this theory, that slogan is used only as informal motivation.  The actual
+lower-bound argument does not rely on the slogan directly, but on a much
+stronger, explicitly stated modeling condition — the LR-read hypothesis —
+which restricts how a solver may obtain information about L and R.  LR-read is
+therefore treated as a separate assumption, not as a formal consequence of the
+informal principle.
+ 
 This formalisation extracts and isolates the lower-bound mechanism behind:
 
       C. A. Feinstein,
@@ -98,14 +105,19 @@ reorder, copy, compress, or interleave parts of its input tape.  Therefore,
 the decision-tree lower bound does not automatically carry over.
 
 To bridge this gap, the theory ‹SubsetSum_CookLevin› introduces the locale
-‹LR_Read_TM›.  Its purpose is to formalise—within the Cook–Levin TM model—the
-informal principle stated at the beginning of the theory:
+‹LR_Read_TM›.  It does *not* attempt to derive a formal statement from the
+informal slogan in the introduction.  Instead, it packages a stronger,
+explicitly axiomatic condition — LR-read — that is inspired by the idea
 
       “To decide whether two quantities L and R are equal,
        a solver must read at least one bit encoding L
-       and at least one bit encoding R.”
+       and at least one bit encoding R,”
 
-For SUBSET–SUM, these quantities L and R arise from the canonical split of the
+but goes well beyond it.  LR-read is chosen precisely because it is strong
+enough to fit the abstract assumptions of ‹SubsetSum_Lemma1› and therefore
+to support the √(2^n) lower bound.
+
+For SUBSET–SUM, the quantities L and R arise from the canonical split of the
 verification equation at position k:
 
       L = ∑ᵢ₍ᵢ<ₖ₎ as!i * xs!i          (determined by prefix choices xs[0..k−1])
@@ -134,27 +146,25 @@ Intuitively, these sets measure what the machine has effectively *learned*
 about the left and right quantities L and R from the bits it has read.
 
 -------------------------------------------------------------------------------
-■  LR-read: the formal counterpart of the informal principle
+■  LR-read: a strong left/right information pattern
 -------------------------------------------------------------------------------
 
-The LR-read hypothesis strengthens the informal slogan into the precise
-requirement that, for every distinct-subset-sum instance (as,s), there exists
-a split k such that
+The LR-read hypothesis then imposes a specific, strengthened left/right
+information pattern: for every distinct-subset-sum instance (as,s), there
+exists a split k such that
 
       seenL_TM as s k = LHS(eₖ as s)
       seenR_TM as s k = RHS(eₖ as s).
 
-This is the formal expression of:
+This should be understood as a *strong assumption*, not as a mere restatement
+of the informal slogan.  It says that, at some split k,
 
-      “The solver must read information encoding L and R.”
+  • the machine distinguishes *all* canonical L- and R-values (enough
+    information to decide L = R), and
 
-The equalities assert two things:
-
-  • the machine distinguishes *all* canonical L- and R-values (it has truly
-    obtained enough information to decide L = R), and
-
-  • it distinguishes *exactly* these values (its information flow matches the
-    canonical L/R structure rather than some unrelated decomposition).
+  • it distinguishes *exactly* these values (its information flow aligns with
+    the canonical L/R structure from the decision-tree model, and not some
+    other decomposition).
 
 -------------------------------------------------------------------------------
 ■  The cost principle
@@ -166,14 +176,16 @@ The second LR-read axiom states:
 
 Each distinguishable canonical value requires at least one unit of work.
 
-With the equalities above, this yields:
+Together with the equalities above, this yields:
 
       |seenL_TM| = 2^k,       |seenR_TM| = 2^(n−k),
       steps_TM as s ≥ 2^k + 2^(n−k) ≥ 2 * sqrt(2^n).
 
 Thus LR-read allows us to instantiate ‹SubsetSum_Lemma1› using
 ‹steps = steps_TM›, transferring the √(2^n) lower bound from the abstract
-decision-tree setting to Cook–Levin Turing machines.
+decision-tree setting to Cook–Levin Turing machines.  The price is that
+LR-read is a strong, explicitly assumed constraint on how solvers may use
+their input, and not a theorem about all possible algorithms.
 ›
 
 
@@ -181,8 +193,10 @@ section ‹4.  Why LR-read is Assumed›
 
 text ‹
 The LR-read property is a modeling assumption: we do not attempt to prove that
-every SUBSET–SUM solver satisfies it.  We state it explicitly and use it as a
-hypothesis.
+every SUBSET–SUM solver satisfies it.  It is a consciously strengthened form of
+the intuitive idea that “to decide L = R one must read some information about L
+and some about R”, chosen because it matches the abstract hypotheses of
+‹SubsetSum_Lemma1› and makes the lower-bound proof go through.
 
 If LR-read held for all Turing machines solving SUBSET–SUM, then the √(2^n)
 lower bound established in ‹LR_Read_TM› would apply universally.  Since √(2^n)
