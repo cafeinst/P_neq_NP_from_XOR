@@ -3,95 +3,90 @@ theory SubsetSum_PneqNP
 begin
 
 text ‹
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                            %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
 %        A CONDITIONAL PROOF THAT P != NP FROM AN INFORMATION-FLOW PRINCIPLE %
-%                                                                            %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-This chapter explains, in non-technical terms, the structure of the conditional
-argument formalised in this theory.  The goal is to identify precisely:
+This chapter presents a non-technical explanation of the conditional argument
+formalised in this theory.  The aim is to identify carefully:
 
   • which components are fully proved in Isabelle/HOL, and
-  • which assumption — the LR-read hypothesis — remains external.
+  • which assumption remains external.
 
-The main result has the form:
+The final statement is the conditional implication:
 
       If every Turing machine solving SUBSET–SUM satisfies the LR-read
       information-flow property, then P != NP.
 
-The information-flow principle is intuitive:
+The motivating intuition is simple:
 
       To decide whether two quantities L and R are equal,
-      a solver must read at least one bit of the input encoding L
-      and at least one bit encoding R.
+      a solver must read at least one bit of information about L
+      and one bit about R.
 
-In this theory, that slogan is used only as informal motivation.  The actual
-lower-bound argument does not rely on the slogan directly, but on a much
-stronger, explicitly stated modeling condition — the LR-read hypothesis —
-which restricts how a solver may obtain information about L and R.  LR-read is
-therefore treated as a separate assumption, not as a formal consequence of the
-informal principle.
- 
-This formalisation extracts and isolates the lower-bound mechanism behind:
+In SUBSET–SUM, however, L and R each range over *exponentially many* explicit
+possibilities.  Determining whether L = R requires enough information to narrow
+each side down to its *actual* value among those exponentially many options.
+The LR-read hypothesis is the formal strengthening of this idea that makes the
+lower-bound argument go through.  It is therefore treated as an explicit,
+external assumption, not as a theorem derived from the informal slogan.
 
-      C. A. Feinstein,
-      "Dialogue Concerning the Two Chief World Views",
-      arXiv:1605.08639.
-
-AI systems (ChatGPT and Claude) assisted in structuring and improving comments.
-Every formal proof is verified by Isabelle/HOL.  The *only* non-proved ingredient
-is the LR-read assumption, which is made explicit and never used implicitly.
+Every formal lower-bound, semantic, and verifier argument in this development is
+checked in Isabelle/HOL.  The only unproved ingredient is the LR-read property.
 ›
 
 
 section ‹1.  Why SUBSET–SUM?›
 
 text ‹
-The SUBSET–SUM problem asks whether for integers
+The SUBSET–SUM problem asks whether, for integers
 
-    as = [a₀, …, aₙ₋₁]   and   target s
+    as = [a₀, …, aₙ₋₁]  and  target s,
 
 there exists a 0/1-vector xs such that
 
       ∑ᵢ as!i * xs!i = s.
 
-For certain inputs — for example, as = [1,2,4,…,2ⁿ⁻¹] — all 2ⁿ subset sums are
-distinct.  More generally, any list as whose subset sums are all different is
-called a distinct-subset-sum instance.  The lower-bound argument focuses on the *class* 
-of such instances as the canonical adversarial family: they realise the maximal number 2ⁿ 
-of different subset sums, but no special algorithmic hardness is assumed for the 
-powers-of-two examples beyond this property.
+Some inputs — such as as = [1,2,4,…,2^(n−1)] — have the property that *all*
+2ⁿ subset sums are distinct.  More generally, any list as with this property is
+called a distinct-subset-sum instance.  These instances form a large family and
+serve as the canonical adversarial cases for the lower bound.  No special
+algorithmic hardness is ascribed to the powers-of-two examples beyond their
+distinct-subset-sum structure.
 ›
 
 
 section ‹2.  The Decision-Tree Lower Bound›
 
 text ‹
-The theory SubsetSum_DecisionTree defines an abstract “reader” model and proves:
+The theory ‹SubsetSum_DecisionTree› defines an abstract “reader” model and
+establishes the lower bound
 
       steps(as, s)  ≥  2 * sqrt(2^n)
 
-for all lists as of length n having distinct subset sums.
+for all distinct-subset-sum inputs as of length n.
 
-The model is an adversary game:
+The model is an adversarial process:
 
   • the solver reads bits of the true input (as, s),
-  • the adversary tracks all virtual completions xs ∈ {0,1}ⁿ still compatible,
-  • for each split k, the canonical equation eₖ(as,s) decomposes the sum:
+  • the adversary tracks all completions xs ∈ {0,1}ⁿ still compatible with
+    the solver’s observations,
+  • for each split k, the canonical equation eₖ(as,s) separates the sum:
 
-        LHS depends on xs[0..k−1] and
+        LHS depends on xs[0..k−1]
         RHS depends on xs[k..n−1].
 
-As xs ranges, LHS and RHS vary over sets of sizes 2^k and 2^(n−k).  
-The axioms of SubsetSum_Lemma1 require:
+As xs varies, LHS takes exactly 2^k values and RHS takes exactly 2^(n−k)
+values.  The abstract axioms of ‹SubsetSum_Lemma1› require:
 
-  (A1) the solver’s information flow matches these canonical LHS/RHS sets  
+  (A1) the solver’s information flow matches these canonical LHS/RHS families,
   (A2) each distinguishable value costs ≥ 1 step.
 
-Thus:
+Thus the solver’s cost is at least
 
-      steps ≥ 2^k + 2^(n−k),
+      2^k + 2^(n−k),
 
 minimised at 2 * sqrt(2^n).
 ›
@@ -100,92 +95,83 @@ minimised at 2 * sqrt(2^n).
 section ‹3.  From Decision Trees to Cook–Levin Turing Machines›
 
 text ‹
-A Cook–Levin Turing machine is far more flexible than a decision tree: it may
-reorder, copy, compress, or interleave parts of its input tape.  Therefore,
-the decision-tree lower bound does not automatically carry over.
+A Cook–Levin Turing machine can move, copy, rewrite, or interleave its input in
+ways far more flexible than an abstract decision tree.  Therefore, the
+decision-tree lower bound does not automatically apply to Turing machines.
 
-To bridge this gap, the theory ‹SubsetSum_CookLevin› introduces the locale
-‹LR_Read_TM›.  It does *not* attempt to derive a formal statement from the
-informal slogan in the introduction.  Instead, it packages a stronger,
-explicitly axiomatic condition — LR-read — that is inspired by the idea
+The transfer requires capturing *how much information a concrete solver actually
+extracts* from its input tape.  The starting point is the informal principle
+from the introduction:
 
-      “To decide whether two quantities L and R are equal,
-       a solver must read at least one bit encoding L
-       and at least one bit encoding R,”
+      To decide whether two quantities L and R are equal,
+      a solver must read information about L and about R.
 
-but goes well beyond it.  LR-read is formulated so that, once assumed, it 
-fits the abstract assumptions of ‹SubsetSum_Lemma1› and thereby supports the √(2^n)
-lower bound.
+In SUBSET–SUM, this principle becomes significant because for each split k,
+the unknown choice vector xs induces exactly:
 
-For SUBSET–SUM, the quantities L and R arise from the canonical split of the
-verification equation at position k:
+      2^k possible L-values   (the set LHS(eₖ as s))
+      2^(n−k) possible R-values (the set RHS(eₖ as s)).
 
-      L = ∑ᵢ₍ᵢ<ₖ₎ as!i * xs!i          (determined by prefix choices xs[0..k−1])
-      R = s − ∑ᵢ₍ᵢ≥ₖ₎ as!i * xs!i      (determined by suffix choices xs[k..n−1]).
+To decide whether L = R, a solver must narrow down:
 
-Thus “bits encoding L” refers to the part of the encoded instance that affects
-possible L-values when xs varies; similarly for R.  We call these semantic
-regions of the input the **L-zone** and **R-zone**.  They need not appear
-contiguously on the tape—the point is simply that changing L-zone bits changes
-L but not R, and changing R-zone bits changes R but not L.
+  • which of the 2^k L-values is the actual one, and
+  • which of the 2^(n−k) R-values is the actual one.
 
--------------------------------------------------------------------------------
-■  Distinguishable values: what the machine actually learns
--------------------------------------------------------------------------------
+This minimal requirement motivates the formal objects introduced in
+‹SubsetSum_CookLevin›:
 
-A Turing machine never sees the choice vector xs.  Instead, we observe how its
-behaviour changes if the input is modified in ways that alter only L-zone or
-only R-zone information.  This leads to the definitions:
+  • ‹seenL_TM as s k› — the set of L-values that change the machine’s behaviour,
+  • ‹seenR_TM as s k› — the analogous set for R.
 
-  • ‹seenL_TM as s k› = the set of canonical L-values the machine’s behaviour
-    can distinguish at split k;
-
-  • ‹seenR_TM as s k› = the analogous set of distinguishable R-values.
-
-Intuitively, these sets measure what the machine has effectively *learned*
-about the left and right quantities L and R from the bits it has read.
+These *distinguishability sets* measure what the machine has effectively learned
+from the parts of the input it has read.  They are the Turing-machine analogue
+of the information sets in the decision-tree model.
 
 -------------------------------------------------------------------------------
-■  LR-read: a strong left/right information pattern
+■  LR-read: a formal strengthening of the informal principle
 -------------------------------------------------------------------------------
 
-The LR-read hypothesis then imposes a specific, strengthened left/right
-information pattern: for every distinct-subset-sum instance (as,s), there
-exists a split k such that
+The LR-read hypothesis asserts that for every distinct-subset-sum instance
+(as, s), there exists a split k such that
 
       seenL_TM as s k = LHS(eₖ as s)
       seenR_TM as s k = RHS(eₖ as s).
 
-This should be understood as a *strong assumption*, not as a mere restatement
-of the informal slogan.  It says that, at some split k,
+This is stronger than the informal slogan.  Instead of merely saying that the
+machine learns *some* information about L and *some* about R, LR-read requires:
 
-  • the machine distinguishes *all* canonical L- and R-values (enough
-    information to decide L = R), and
+  • it distinguishes *all* canonical L-values, and  
+  • it distinguishes *all* canonical R-values,
 
-  • it distinguishes *exactly* these values (its information flow aligns with
-    the canonical L/R structure from the decision-tree model, and not some
-    other decomposition).
+for some canonical split k.  This exactly matches the information pattern
+required by the abstract decision-tree lower bound.
+
+LR-read is therefore a deliberately strengthened *modeling condition* chosen so
+that a concrete Turing machine has enough left/right structural information for
+the lower-bound machinery of ‹SubsetSum_Lemma1› to apply.
 
 -------------------------------------------------------------------------------
 ■  The cost principle
 -------------------------------------------------------------------------------
 
-The second LR-read axiom states:
+The second LR-read axiom asserts:
 
       steps_TM as s ≥ |seenL_TM as s k| + |seenR_TM as s k|.
 
-Each distinguishable canonical value requires at least one unit of work.
+Each distinguishable canonical value costs ≥ 1 unit of work.  Combined with the
+equalities above, we obtain
 
-Together with the equalities above, this yields:
+      |seenL_TM| = 2^k     and     |seenR_TM| = 2^(n−k),
 
-      |seenL_TM| = 2^k,       |seenR_TM| = 2^(n−k),
+and hence
+
       steps_TM as s ≥ 2^k + 2^(n−k) ≥ 2 * sqrt(2^n).
 
-Thus LR-read allows us to instantiate ‹SubsetSum_Lemma1› using
-‹steps = steps_TM›, transferring the √(2^n) lower bound from the abstract
-decision-tree setting to Cook–Levin Turing machines.  The price is that
-LR-read is a strong, explicitly assumed constraint on how solvers may use
-their input, and not a theorem about all possible algorithms.
+Thus LR-read allows ‹SubsetSum_Lemma1› to be instantiated with
+‹steps = steps_TM›, transferring the √(2^n) lower bound to the Cook–Levin
+Turing-machine setting.  The price is that LR-read itself is a *strong,
+non-mechanised assumption* about how solvers obtain information from their
+input.
 ›
 
 
@@ -193,19 +179,19 @@ section ‹4.  Why LR-read is Assumed›
 
 text ‹
 The LR-read property is a modeling assumption: we do not attempt to prove that
-every SUBSET–SUM solver satisfies it.  It is a consciously strengthened form of
-the intuitive idea that “to decide L = R one must read some information about L
-and some about R”, chosen because it matches the abstract hypotheses of
-‹SubsetSum_Lemma1› and makes the lower-bound proof go through.
+every solver for SUBSET–SUM satisfies it.  It is a consciously strengthened form
+of the idea that to decide L = R, a solver must obtain enough information to
+determine the actual L-value and actual R-value among their exponentially many
+possibilities.
 
-If LR-read held for all Turing machines solving SUBSET–SUM, then the √(2^n)
-lower bound established in ‹LR_Read_TM› would apply universally.  Since √(2^n)
-grows faster than any polynomial, this would imply SUBSET–SUM ∉ P.  Combined
-with SUBSET–SUM ∈ NP, we would conclude P ≠ NP.
+If LR-read held for all Turing-machine solvers of SUBSET–SUM, then every such
+solver would incur a √(2^n) lower bound on distinct-subset-sum inputs.
+Because this quantity grows faster than any polynomial, we would have
+SUBSET–SUM ∉ P.  Combined with SUBSET–SUM ∈ NP, this yields P ≠ NP.
 
-The purpose of this formalisation is therefore to isolate LR-read as the *only*
-non-mechanised ingredient: the combinatorial reasoning, decision-tree lower
-bound, Cook–Levin semantics, and NP-verifier are all fully formalised.
+The purpose of the formalisation is therefore to isolate LR-read as the *only*
+non-mechanised assumption: everything else — the combinatorial reasoning,
+decision-tree lower bound, Cook–Levin semantics, and NP-verifier — is proved.
 ›
 
 
@@ -214,19 +200,19 @@ section ‹5.  Logical Structure›
 text ‹
 The development is organised in three layers:
 
-  (1) Lower-bound kernel — *proved*  
+  (1) Lower-bound kernel — *proved*
       Theories ‹SubsetSum_DecisionTree› and ‹SubsetSum_Lemma1› prove a
       √(2^n) lower bound under abstract L/R-information axioms.
 
-  (2) Cook–Levin bridge — *proved*  
-      The locale ‹LR_Read_TM› formalises how the behaviour of a concrete
-      Turing machine induces the distinguishability sets ‹seenL_TM› and
-      ‹seenR_TM› needed to instantiate the abstract lemma.
+  (2) Cook–Levin bridge — *proved*
+      The locale ‹LR_Read_TM› formalises how a Turing machine induces the
+      distinguishability sets ‹seenL_TM› and ‹seenR_TM› required by the
+      abstract lemma.
 
-  (3) Modeling assumption — *not proved*  
+  (3) Modeling assumption — *not proved*
       Every solver for SUBSET–SUM satisfies LR-read.
 
-Together these yield the conditional statement:
+Together these yield the conditional implication:
 
       If SUBSET–SUM ∈ P and all solvers satisfy LR-read,
       then P ≠ NP.
@@ -238,13 +224,13 @@ section ‹6.  Relation to Feinstein (2016)›
 text ‹
 Feinstein argued informally that verifying equality of two subset-sum
 expressions requires exploring many combinations of prefix/suffix choices for
-xs.  This development captures the combinatorial essence of that reasoning via
-the families LHS(eₖ) and RHS(eₖ), formalises the corresponding
-decision-tree lower bound, and identifies LR-read as the precise structural
-assumption needed to lift the argument to Turing machines.
+xs.  This development captures the combinatorial core of that reasoning via the
+families LHS(eₖ) and RHS(eₖ), formalises the corresponding decision-tree lower
+bound, and identifies LR-read as the structural assumption needed to transfer
+the argument to Turing machines.
 
-The decision-tree lower bound and its transfer to TMs are fully mechanised in
-Isabelle/HOL; LR-read is the only external assumption.
+The lower bound itself and its transfer to TMs are fully mechanised in
+Isabelle/HOL; LR-read is the unique external assumption.
 ›
 
 
@@ -253,16 +239,16 @@ section ‹7.  Perspective›
 text ‹
 This theory does not prove P ≠ NP.  Instead, it decomposes the argument into
 
-  • a fully formalised lower-bound engine, and  
+  • a fully formalised lower-bound mechanism, and
   • a single explicit modeling assumption (LR-read).
 
-If LR-read were justified independently—by an argument that every solver must
-process the encoding of (as, s) in a left–right sensitive way—then the
-formalisation here would yield P ≠ NP automatically.
+If LR-read were justified independently — for example, by an argument that every
+solver must process the encoding of (as, s) in a left–right sensitive way —
+then the formalisation here would yield P ≠ NP immediately.
 
-The contribution of this work is therefore twofold:
+Thus the contribution is twofold:
   (a) a verified lower-bound framework for SUBSET–SUM, and
-  (b) a clear identification of the one hypothesis on which the conditional
+  (b) a precise identification of the sole hypothesis on which the conditional
       separation relies.
 ›
 
@@ -270,20 +256,18 @@ The contribution of this work is therefore twofold:
 section ‹8.  SUBSET–SUM is in NP (formalised)›
 
 text ‹
-The Cook–Levin AFP library does not provide SUBSET–SUM ∈ NP by default.
-Instead, we derive it via a general verifier packaged by SS_Verifier_NP.
+The Cook–Levin AFP library does not supply SUBSET–SUM ∈ NP by default.
+Instead we obtain it from a general verifier via SS_Verifier_NP.
 
-A verifier gives:
+A verifier provides:
 
-  • explicit encodings of instances and certificates,
-  • a polynomial-time Turing-machine verifier V,
+  • encodings of instances and certificates,
+  • a polynomial-time TM verifier V,
   • soundness and completeness.
 
-From such a verifier we prove:
+From this we derive:
 
-      SUBSETSUM_lang enc0 ∈ 𝒩𝒫,
-
-which is the standard NP characterisation.
+      SUBSETSUM_lang enc0 ∈ 𝒩𝒫.
 ›
 
 lemma SUBSETSUM_in_NP_global:
@@ -301,13 +285,11 @@ definition P_eq_NP :: bool where
 section ‹10.  Bridging P to a concrete CL solver›
 
 text ‹
-If SUBSET–SUM ∈ P, then some Cook–Levin Turing machine solves it in polynomial
-time.  This bridge moves from:
+If SUBSET–SUM ∈ P, then some Cook–Levin machine solves it in polynomial time.
 
-    language complexity  →  machine semantics.
-
-The encoding used by the solver need not equal the verifier’s enc0.  Only the
-underlying language matters.
+This step passes from language complexity to concrete machine semantics.
+The solver’s encoding need not match the verifier’s encoding; only the language
+matters.
 ›
 
 definition P_impl_CL_SubsetSum_Solver ::
@@ -322,7 +304,7 @@ definition P_impl_CL_SubsetSum_Solver ::
 section ‹11.  LR-read-all-solvers hypothesis›
 
 text ‹
-This is the single modeling assumption.
+This is the single modelling assumption.
 
 For a fixed encoding enc0:
 
@@ -330,10 +312,10 @@ For a fixed encoding enc0:
 
 means:
 
-  (1) If SUBSET–SUM ∈ P, then a CL solver exists, and  
-  (2) Every CL solver satisfies LR-read — i.e. belongs to ‹LR_Read_TM›.
+  (1) If SUBSET–SUM ∈ P, a polynomial-time CL solver exists, and
+  (2) Every CL solver satisfies LR-read, i.e. belongs to ‹LR_Read_TM›.
 
-NP-membership is *not* assumed here; it is proved separately via the verifier.
+NP-membership is not assumed; it is proved separately.
 ›
 
 definition LR_read_all_solvers_hypothesis ::
@@ -348,7 +330,7 @@ definition LR_read_all_solvers_hypothesis ::
 section ‹12.  Core Conditional Theorem›
 
 text ‹
-This theorem expresses the logical heart of the argument:
+This theorem expresses the logical core:
 
     LR assumptions  +  SUBSET–SUM ∈ NP   ⇒   P ≠ NP.
 
@@ -358,7 +340,7 @@ Proof sketch:
     Then SUBSET–SUM ∈ P.
     So a polynomial-time CL solver M exists.
     LR-read applies to M, giving a √(2^n) lower bound.
-    Contradicting the assumed polynomial-time upper bound.
+    Contradiction with the polynomial-time upper bound.
 ›
 
 lemma P_neq_NP_if_LR_read_all_solvers_hypothesis:
@@ -417,14 +399,13 @@ proof -
   qed
 qed
 
+
 section ‹13.  Final Packaged Theorem›
 
 text ‹
-This theorem provides the one-line final result:
+This theorem gives the final wrapped statement:
 
-      LR hypothesis + SUBSET–SUM verifier  ⇒  P ≠ NP.
-
-It simply wraps the earlier lemma together with SUBSETSUM_in_NP_global.
+      LR hypothesis + SUBSET–SUM verifier ⇒ P ≠ NP.
 ›
 
 theorem P_neq_NP_under_LR_model:
