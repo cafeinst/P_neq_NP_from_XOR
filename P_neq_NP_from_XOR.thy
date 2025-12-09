@@ -5,109 +5,90 @@ begin
 text ‹
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                             %
-%      A CONDITIONAL PROOF THAT P ≠ NP FROM AN INFORMATION-FLOW PRINCIPLE     %
+%      A CONDITIONAL PROOF THAT P ≠ NP FROM AN INFORMATION–FLOW PRINCIPLE     %
 %                                                                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-This theory completes a mechanised formalisation of the lower-bound argument for
-SUBSET–SUM originating in
+This theory completes the mechanised development of a conditional lower bound
+for SUBSET–SUM originating in
 
     C. A. Feinstein,
     “Dialogue Concerning the Two Chief World Views,”
     arXiv:1605.08639.
 
-The development begins from a simple and intuitively compelling information-flow
-principle:
+At the heart of the argument is a structural information–flow principle:  
+to determine whether two quantities L and R can be equal, a solver must acquire
+sufficient information about contributions arising from the “left’’ side and the
+“right’’ side of the underlying equation.
 
-      To decide whether two quantities L and R are equal,
-      a solver must obtain some information about L
-      and some information about R.
-
-In the SUBSET–SUM setting, this principle takes on a precise combinatorial form.
+For SUBSET–SUM, this informal idea acquires a precise combinatorial form.  
 For each split position k, the canonical decomposition eₖ(as, s) rewrites the
-verification equation into two independent collections of candidate contributions:
+verification equation into two independent families of candidate contributions:
 
-      LHS(eₖ as s)     of size 2^k,
-      RHS(eₖ as s)     of size 2^(n − k),
+      LHS(eₖ as s)      of size 2^k,
+      RHS(eₖ as s)      of size 2^(n − k),
 
-arising respectively from all prefix-choices and all suffix-choices of the
-unknown selection vector xs.  Determining whether a solution exists is
-equivalent to determining whether these two sets intersect.
+generated respectively by all prefix-choices and suffix-choices of the unknown
+0/1-vector xs.  Each element of LHS(eₖ) or RHS(eₖ) corresponds to a distinct
+feasible completion of xs; before any information is read, all such candidates
+are simultaneously possible.
 
-A crucial observation is that **each** element of LHS(eₖ) and **each** element of
-RHS(eₖ) corresponds to a different feasible completion of xs.  Before the solver
-has read the input, all such completions are consistent with the instance; none
-may be discarded a priori.  Therefore, in the worst case, a correct solver must
-acquire enough information to distinguish *every* canonical L-value and *every*
-canonical R-value.  Otherwise, it cannot rule out the possibility that an
-unexamined L equals an unexamined R.
+Consequently, a correct solver must acquire enough information to distinguish
+every canonical L-value and every canonical R-value.  
+Otherwise it cannot rule out the possibility that some undiscriminated element of
+LHS(eₖ) equals some undiscriminated element of RHS(eₖ).
 
-This explains why the informal information principle forces the solver to
-distinguish all canonical candidates: every undistinguished candidate is a live
-possibility, and eliminating all possibilities except the true one requires
-distinguishing them one by one.
+Within the Cook–Levin Turing-machine framework, this informational requirement
+is expressed by the LR-read property: for some split k, the machine’s observable
+behaviour distinguishes exactly the canonical candidate sets LHS(eₖ) and
+RHS(eₖ).  LR-read is the single structural assumption that allows the abstract
+decision–tree lower bound to transfer to Turing machines.
 
-When this informational requirement is expressed inside the Cook–Levin
-Turing-machine framework, it becomes the LR-read property: a structural
-assumption asserting that, for some split k, the machine’s observable behaviour
-distinguishes exactly the canonical left and right candidate sets LHS(eₖ) and
-RHS(eₖ).  LR-read is the single assumption needed to transfer the abstract
-decision-tree lower bound to the Turing-machine model.
-
-Under LR-read, the formalisation proves that any solver must take at least
+Assuming LR-read, the mechanised development shows that every solver must take
+at least
 
       2 · sqrt(2^n)
 
-steps on distinct-subset-sum inputs of length n.  Since this quantity grows
-faster than any polynomial, we obtain the conditional implication:
+steps on distinct-subset-sum inputs of length n.  Since √(2^n) grows faster than
+any polynomial, we obtain the conditional implication:
 
       If every polynomial-time solver for SUBSET–SUM satisfies LR-read,
       then P ≠ NP.
 
-All mathematical components except LR-read itself are fully mechanised in
-Isabelle/HOL: the decision-tree adversary argument, the Cook–Levin machine
-semantics (from the AFP’s Cook–Levin library), and the NP verifier for
-SUBSET–SUM.  LR-read is the single explicit information-flow hypothesis that
-links these components.
+All mathematical components except LR-read itself are fully formalised and
+checked in Isabelle/HOL: the decision–tree adversary argument, the Cook–Levin
+machine semantics (via the AFP’s ‹Cook_Levin› library), and the NP verifier for
+SUBSET–SUM.  LR-read is the sole external modelling hypothesis linking these
+components.
 
-AI systems (ChatGPT and Claude) assisted in improving the exposition and
-organisation of the informal text; all formal proofs are verified by Isabelle/HOL.
+AI systems (ChatGPT and Claude) assisted in drafting and refining both informal
+text and segments of the formal proof scripts under human supervision; the final
+results are fully machine-checked by Isabelle/HOL.
 ›
 
 
 section ‹1.  Why SUBSET–SUM?›
 
 text ‹
-Our interest in SUBSET–SUM begins with a basic information principle:
+SUBSET–SUM is particularly well suited for an information–theoretic analysis
+because each 0/1-choice vector xs produces a distinct contribution
 
-      To decide whether two quantities L and R are equal,
-      a solver must obtain some information about L
-      and some information about R.
+      ∑ᵢ as!i * xs!i
 
-In SUBSET–SUM, each 0/1-choice vector xs determines the value
+on instances with pairwise distinct subset sums.  Thus every xs corresponds to a
+different feasible “candidate value’’ in the verification equation.
 
-      ∑ᵢ as!i * xs!i,
+A canonical split at position k isolates the influence of the prefix xs[0..k−1]
+from that of the suffix xs[k..n−1].  This decomposition reveals a natural
+two-sided structure: prefix-choices produce one family of candidate values,
+and suffix-choices produce another.  Determining whether a solution exists is,
+in effect, checking whether these two families intersect.
 
-and for distinct-subset-sum instances these values are all different.
-Thus each xs represents a *distinct candidate contribution* to the equation.
-
-Splitting the sum at a position k separates these contributions into two
-canonical candidate families:
-
-      LHS(eₖ as s)    determined by xs[0..k−1],
-      RHS(eₖ as s)    determined by xs[k..n−1].
-
-If we treat the elements of LHS(eₖ) and RHS(eₖ) as *independent candidates*,
-then solvability at split k is equivalent to asking whether these two sets
-intersect.  Crucially, for distinct-subset-sum instances, **each element in each
-set corresponds to a different feasible choice of xs**, and the solver has no
-prior information about which choices are viable.
-
-Therefore, to determine whether any intersection exists, the solver must be able
-to distinguish all relevant candidates on both sides.  This informational
-perspective—the idea that the solver must gather enough data to rule out or
-confirm each independent candidate L- and R-value—is what ultimately drives the
-lower-bound argument in the remainder of the theory.
+The key point is that, before any information about xs is acquired, all such
+candidates are a priori possible.  SUBSET–SUM therefore provides a clean setting
+in which the informational burden of ruling out or confirming candidate
+contributions can be analysed precisely — a structure that the remainder of this
+theory exploits in both the abstract and Turing-machine settings.
 ›
 
 
