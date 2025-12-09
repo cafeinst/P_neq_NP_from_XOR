@@ -20,7 +20,8 @@ The development begins from a simple and intuitively compelling information-flow
 principle:
 
       To decide whether two quantities L and R are equal,
-      a solver must obtain information about L and information about R.
+      a solver must obtain some information about L
+      and some information about R.
 
 In the SUBSET–SUM setting, this principle takes on a precise combinatorial form.
 For each split position k, the canonical decomposition eₖ(as, s) rewrites the
