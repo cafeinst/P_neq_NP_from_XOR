@@ -31,10 +31,9 @@ two collections of *possible integers*:
       LHS(eₖ as s)      (size 2^k),
       RHS(eₖ as s)      (size 2^(n − k)).
 
-Each element of these sets is a distinct integer that L or R could take,
-consistent with some completion of the unknown vector xs.  Thus, when viewed
-through the original principle, the solver is confronted not with one possible
-L and one possible R, but with **2^k possible Ls and 2^(n − k) possible Rs**.
+Each element of these sets is a distinct integer that L or R could take.  Thus, 
+when viewed through the original principle, the solver is confronted not with one 
+possible L and one possible R, but with 2^k possible Ls and 2^(n − k) possible Rs.
 
 It follows immediately that the solver must obtain *at least one unit of
 information about each candidate integer*.  Otherwise, some L-candidate and some
@@ -52,9 +51,9 @@ computing derived representations that bypass the intended structure.
 For this reason, the theory introduces LR-read as an explicit modelling
 assumption.  LR-read formalises the idea that, for some split k, the machine’s
 observable behaviour distinguishes **exactly** the canonical L- and R-candidate
-integers produced by eₖ(as,s).  It is not an additional principle, but the
-concrete instantiation of the original informational requirement within the
-operational semantics of Cook–Levin Turing machines.
+integers produced by eₖ(as,s).  It is not an additional assumption, but the 
+direct formal realisation of the informational requirement stated above, 
+expressed in the language of Cook–Levin Turing machines.
 
 Under LR-read, the mechanised development imports the abstract decision-tree
 lower bound and shows that every solver must take at least
@@ -72,6 +71,12 @@ argument, Cook–Levin machine semantics, and the NP verifier for SUBSET–SUM �
 fully formalised and machine-checked in Isabelle/HOL.  LR-read is the sole
 unproved assumption linking the original information-flow observation to the
 behaviour of concrete Turing-machine solvers.
+
+Acknowledgement:
+The author received assistance from AI systems (ChatGPT by OpenAI and Claude by 
+Anthropic) in drafting and polishing explanatory text and in iteratively refining 
+Isabelle/HOL proof scripts.  All formal results and final proofs are the 
+responsibility of the author.
 ›
 
 
