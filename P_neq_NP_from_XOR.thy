@@ -134,6 +134,18 @@ This bound is independent of Turing machines, encodings, or internal state.
 It isolates the combinatorial consequence of the informational principle:  
 if a solver must handle each candidate integer individually, then it must incur
 at least √(2^n) work on some split.
+
+The decision-tree theory ‹SubsetSum_DecisionTree› already contains the
+abstract lower-bound result ‹SubsetSum_To_Polytime›.  That theorem states
+that any solver satisfying the LR–reader axioms of
+‹SubsetSum_Lemma1› cannot run in polynomial time on all
+distinct-subset-sum instances.
+
+In the present theory we do not reprove this result.  Instead, we
+combine it with the Cook–Levin instantiation developed in
+‹SubsetSum_CookLevin› and a single modelling assumption:
+that every polynomial-time SUBSET–SUM solver satisfies the LR–read
+information principle.
 ›
 
 
@@ -185,6 +197,120 @@ Once LR-read is assumed, the abstract combinatorial lower bound applies
 verbatim, yielding the √(2^n) time requirement for any such solver.
 ›
 
+section ‹Information principle and canonical presentations›
+
+text ‹
+  ────────────────────────────────────────────────────────────────────────────
+  ■ Equality of two independent values
+  ────────────────────────────────────────────────────────────────────────────
+
+  The underlying information principle used in our lower bound can be stated
+  in very simple terms.
+
+  Consider two independent integer values ‹L› and ‹R› drawn from fixed sets
+  ‹Lvals› and ‹Rvals›.  A procedure that decides, for every pair ‹(L,R)› in
+  ‹Lvals × Rvals›, whether the equality
+
+        L = R
+
+  holds must, in the worst case, obtain information from both components.
+  Intuitively, there are inputs on which it has to distinguish between the
+  different possibilities for ‹L›, and likewise for ‹R›, in order to decide
+  whether some equality is possible.
+
+  In the theory ‹SubsetSum_DecisionTree› this informal idea is captured by
+  the small locale ‹LR_Eq_Info_Principle›.  That locale does *not* talk
+  about subset sums or Turing machines; it merely packages the idea that a
+  correct equality-decider for independent ranges ‹Lvals› and ‹Rvals› must,
+  in the worst case, be able to separate each canonical value on the left
+  and on the right.
+›
+
+text ‹
+  ────────────────────────────────────────────────────────────────────────────
+  ■ Canonical LHS/RHS versus arbitrary presentations
+  ────────────────────────────────────────────────────────────────────────────
+
+  For SUBSET–SUM there are many ways to write an equivalent “verification
+  equation” for the same problem instance.  Starting from
+
+        ∑ i<n. as ! i * xs ! i = s,
+
+  one can apply arbitrary algebraic manipulations or injective
+  reparametrisations to obtain new presentations that have the same
+  {0,1}-solutions but very different algebraic structure.  Some of these
+  non-canonical equations may admit algorithmic shortcuts: for example,
+  a reparametrisation could expose a common factor, or compress many
+  equality constraints into a single arithmetical test.  Such shortcuts
+  potentially reduce the *number of distinct values that need to be
+  distinguished*.
+
+  The abstract lower bound developed in ‹SubsetSum_DecisionTree› therefore
+  fixes a single, very structured family of presentations, indexed by a
+  split position ‹k›:
+
+      eₖ as s k xs = (L, R),
+
+  where the left component ‹L› is the weighted sum over the first ‹k› bits
+  of ‹xs› and the right component ‹R› is the residual sum over the remaining
+  bits.  For instances with distinct subset sums we proved that the
+  associated value sets
+
+      LHS (eₖ as s k) n,   RHS (eₖ as s k) n
+
+  have maximal cardinalities
+
+      card (LHS (eₖ as s k) n) = 2^k,
+      card (RHS (eₖ as s k) n) = 2^(n − k),
+
+  and, crucially, that they arise from *independent* 0/1 choices in the left
+  and right halves of the solution vector.  Every choice of left bits can
+  be combined with every choice of right bits; there are no hidden algebraic
+  dependencies between the two ranges.
+
+  This canonical family plays the role of the “worst case” for our
+  information principle: it realises the full product space of 2^k left
+  values and 2^(n−k) right values, with no degeneracies.
+›
+
+text ‹
+  ────────────────────────────────────────────────────────────────────────────
+  ■ Why the lower bound only uses canonical presentations
+  ────────────────────────────────────────────────────────────────────────────
+
+  One might ask why the lower bound is proved only for the canonical
+  presentations ‹eₖ as s› rather than for *all* algebraically equivalent
+  equations.  There are two reasons.
+
+  • First, the goal of the lower bound is to exhibit a family of instances
+    and presentations on which any solver that satisfies the LR–equality
+    information principle must perform Ω(√(2ⁿ)) work.  For this purpose we
+    do not need to analyse every clever reparametrisation of the subset-sum
+    equation; it suffices to fix one natural family of equations whose
+    left/right value sets are provably as large and as independent as
+    possible.  The canonical splits ‹eₖ as s› meet exactly this need.
+
+  • Second, allowing arbitrary non-canonical presentations would blur the
+    boundary between the *information model* and the *algebraic ingenuity*
+    of particular algorithms.  A solver might derive a non-canonical
+    equation in which many of the 2ⁿ formal possibilities collapse to a
+    much smaller number of distinct values that need to be told apart.
+    Such algebraic shortcuts are genuine algorithmic improvements, but they
+    are outside the scope of the abstract reader model that
+    ‹SubsetSum_Lemma1› formalises.  The reader model is designed to capture
+    the cost of distinguishing canonical LHS/RHS values arising directly
+    from the underlying 0/1 choices, not the cost of arbitrary algebraic
+    transformations of the equation.
+
+  In short: the canonical presentations are chosen precisely because they
+  expose the “pure” combinatorial difficulty of separating all 2^k left
+  values and 2^(n−k) right values coming from independent input sets.  Any
+  solver that satisfies the LR–equality principle on this canonical family
+  must pay at least √(2ⁿ) steps on some instances.  Non-canonical equations
+  may or may not admit additional shortcuts, but those lie beyond the
+  abstract cost model studied here.
+›
+
 
 section ‹5.  Structure of the Development›
 
@@ -225,6 +351,96 @@ the conditional separation.  Only LR-read is assumed; all other components are
 fully mechanised in Isabelle/HOL.
 ›
 
+section ‹A global LR-read axiom for SUBSET-SUM solvers›
+
+text ‹
+  We now postulate an information-flow axiom at the Cook–Levin level:
+
+    Any Cook–Levin machine that correctly decides SUBSET-SUM
+    in polynomial time (with respect to ‹length as›) admits an
+    LR-read presentation in the sense of ‹LR_Read_TM›.
+›
+
+locale LR_Read_Axiom =
+  fixes M   :: machine
+    and q0  :: nat
+    and enc :: "int list ⇒ int ⇒ bool list"
+  assumes LR_Read_for_all_poly_solvers:
+    "⟦ CL_SubsetSum_Solver M q0 enc;
+       polytime_CL_machine M enc ⟧
+     ⟹ ∃steps_TM seenL_TM seenR_TM.
+           LR_Read_TM M q0 enc steps_TM seenL_TM seenR_TM"
+begin
+
+text ‹
+  Under this axiom, there cannot exist a polynomial-time
+  Cook–Levin SUBSET-SUM solver: any such solver would give
+  rise to an LR-read instance of ‹LR_Read_TM›, contradicting
+  ‹no_polytime_CL_on_distinct_family›.
+›
+
+lemma no_polytime_CL_SubsetSum_solver:
+  assumes solver: "CL_SubsetSum_Solver M q0 enc"
+      and poly:   "polytime_CL_machine M enc"
+  shows False
+proof -
+  (* 1. From the axiom, get LR_Read_TM for this solver *)
+  from LR_Read_for_all_poly_solvers[OF solver poly]
+  obtain steps_TM seenL_TM seenR_TM
+    where LR: "LR_Read_TM M q0 enc steps_TM seenL_TM seenR_TM"
+    by blast
+
+  (* 2. Work *inside* that LR_Read_TM instance *)
+  interpret LR_Read_TM M q0 enc steps_TM seenL_TM seenR_TM
+    by (rule LR)
+
+  (* 3. Unpack the polynomial-time assumption for M, enc *)
+  from poly obtain c d where
+    cpos: "c > 0" and
+    bound_all:
+      "∀as s. steps_CL M (enc as s)
+                ≤ nat (ceiling (c * (real (length as)) ^ d))"
+    unfolding polytime_CL_machine_def
+    by blast
+
+  (* 4. Restrict that bound to distinct-subset-sum instances *)
+  have bound_restricted:
+    "∀as s. distinct_subset_sums as ⟶
+             steps_CL M (enc as s)
+               ≤ nat (ceiling (c * (real (length as)) ^ d))"
+    using bound_all by blast
+
+  (* 5. Package it into the existential form that contradicts
+        no_polytime_CL_on_distinct_family *)
+  have ex_poly_on_distinct:
+    "∃(c::real)>0. ∃(d::nat).
+       ∀as s. distinct_subset_sums as ⟶
+         steps_CL M (enc as s)
+           ≤ nat (ceiling (c * (real (length as)) ^ d))"
+    by (intro exI[of _ c] exI[of _ d] conjI cpos bound_restricted)
+
+  (* 6. Contradiction with the LR_Read_TM-level impossibility theorem *)
+  from no_polytime_CL_on_distinct_family ex_poly_on_distinct
+  show False
+    by blast
+qed
+
+text ‹
+  A convenient corollary: assuming ‹LR_Read_Axiom›, there is
+  no polynomial-time Cook–Levin machine that solves SUBSET-SUM.
+›
+
+corollary no_polytime_SubsetSum:
+  assumes solver: "CL_SubsetSum_Solver M q0 enc"
+  shows "¬ polytime_CL_machine M enc"
+proof
+  assume poly: "polytime_CL_machine M enc"
+  from no_polytime_CL_SubsetSum_solver[OF solver poly]
+  show False .
+qed
+
+end  (* locale LR_Read_Axiom *)
+
 
 section ‹6.  SUBSET–SUM is in NP (formalised)›
 
@@ -252,7 +468,6 @@ section ‹7.  Definition of P = NP›
 
 definition P_eq_NP :: bool where
   "P_eq_NP ⟷ (∀L::language. (L ∈ 𝒫) = (L ∈ 𝒩𝒫))"
-
 
 section ‹8.  Bridging P to a concrete CL solver›
 
@@ -296,8 +511,8 @@ definition LR_read_all_solvers_hypothesis ::
      P_impl_CL_SubsetSum_Solver enc0 ∧
      (∀M q0 enc.
         CL_SubsetSum_Solver M q0 enc ⟶
-          (∃seenL seenR. LR_Read_TM M q0 enc seenL seenR))"
-
+          (∃steps_TM seenL_TM seenR_TM.
+             LR_Read_TM M q0 enc steps_TM seenL_TM seenR_TM))"
 
 section ‹10.  Core Conditional Theorem›
 
@@ -324,8 +539,9 @@ proof -
   from H have
     bridge_P: "P_impl_CL_SubsetSum_Solver enc0" and
     all_LR:   "∀M q0 enc.
-                 CL_SubsetSum_Solver M q0 enc ⟶
-                   (∃seenL seenR. LR_Read_TM M q0 enc seenL seenR)"
+               CL_SubsetSum_Solver M q0 enc ⟶
+                 (∃steps_TM seenL_TM seenR_TM.
+                    LR_Read_TM M q0 enc steps_TM seenL_TM seenR_TM)"
     unfolding LR_read_all_solvers_hypothesis_def by blast+
 
   show "¬ P_eq_NP"
@@ -345,11 +561,11 @@ proof -
       poly:   "polytime_CL_machine M enc"
       by blast
 
-    from all_LR solver obtain seenL seenR where lr:
-      "LR_Read_TM M q0 enc seenL seenR"
+    from all_LR solver obtain steps_TM seenL_TM seenR_TM where lr:
+      "LR_Read_TM M q0 enc steps_TM seenL_TM seenR_TM"
       by blast
 
-    interpret LR: LR_Read_TM M q0 enc seenL seenR
+    interpret LR: LR_Read_TM M q0 enc steps_TM seenL_TM seenR_TM
       by (rule lr)
 
     from poly obtain c d where
