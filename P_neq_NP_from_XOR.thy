@@ -487,8 +487,13 @@ definition P_impl_CL_SubsetSum_Solver ::
            CL_SubsetSum_Solver M q0 enc ∧
            polytime_CL_machine M enc))"
 
+definition IP_TM :: "machine ⇒ nat ⇒ (int list ⇒ int ⇒ bool list) ⇒ bool" where
+  "IP_TM M q0 enc ⟷
+     (∃steps_TM seenL_TM seenR_TM.
+        LR_Read_TM M q0 enc steps_TM seenL_TM seenR_TM)"
 
-section ‹9.  LR-read-all-solvers hypothesis›
+
+section ‹9.  IP-read-all-solvers hypothesis›
 
 text ‹
 This is the single modelling assumption.
@@ -505,14 +510,12 @@ means:
 NP-membership is not assumed; it is proved separately.
 ›
 
-definition LR_read_all_solvers_hypothesis ::
+definition IP_all_poly_solvers_hypothesis ::
   "(int list ⇒ int ⇒ string) ⇒ bool" where
-  "LR_read_all_solvers_hypothesis enc0 ⟷
+  "IP_all_poly_solvers_hypothesis enc0 ⟷
      P_impl_CL_SubsetSum_Solver enc0 ∧
      (∀M q0 enc.
-        CL_SubsetSum_Solver M q0 enc ⟶
-          (∃steps_TM seenL_TM seenR_TM.
-             LR_Read_TM M q0 enc steps_TM seenL_TM seenR_TM))"
+        CL_SubsetSum_Solver M q0 enc ⟶ polytime_CL_machine M enc ⟶ IP_TM M q0 enc)"
 
 section ‹10.  Core Conditional Theorem›
 
@@ -530,19 +533,17 @@ Proof sketch:
     Contradiction with the polynomial-time upper bound.
 ›
 
-lemma P_neq_NP_if_LR_read_all_solvers_hypothesis:
+lemma P_neq_NP_if_IP_all_poly_solvers_hypothesis:
   fixes enc0 :: "int list ⇒ int ⇒ string"
-  assumes H:       "LR_read_all_solvers_hypothesis enc0"
+  assumes H:       "IP_all_poly_solvers_hypothesis enc0"
   assumes NP_enc0: "SUBSETSUM_lang enc0 ∈ 𝒩𝒫"
   shows "¬ P_eq_NP"
 proof -
   from H have
     bridge_P: "P_impl_CL_SubsetSum_Solver enc0" and
-    all_LR:   "∀M q0 enc.
-               CL_SubsetSum_Solver M q0 enc ⟶
-                 (∃steps_TM seenL_TM seenR_TM.
-                    LR_Read_TM M q0 enc steps_TM seenL_TM seenR_TM)"
-    unfolding LR_read_all_solvers_hypothesis_def by blast+
+    all_IP:   "∀M q0 enc.
+                CL_SubsetSum_Solver M q0 enc ⟶ polytime_CL_machine M enc ⟶ IP_TM M q0 enc"
+    unfolding IP_all_poly_solvers_hypothesis_def by blast+
 
   show "¬ P_eq_NP"
   proof
@@ -561,9 +562,10 @@ proof -
       poly:   "polytime_CL_machine M enc"
       by blast
 
-    from all_LR solver obtain steps_TM seenL_TM seenR_TM where lr:
+    from all_IP solver poly have "IP_TM M q0 enc" by blast
+    then obtain steps_TM seenL_TM seenR_TM where lr:
       "LR_Read_TM M q0 enc steps_TM seenL_TM seenR_TM"
-      by blast
+      unfolding IP_TM_def by blast
 
     interpret LR: LR_Read_TM M q0 enc steps_TM seenL_TM seenR_TM
       by (rule lr)
@@ -587,7 +589,6 @@ proof -
   qed
 qed
 
-
 section ‹11.  Final Packaged Theorem›
 
 text ‹
@@ -596,16 +597,16 @@ This theorem gives the final wrapped statement:
       LR hypothesis + SUBSET–SUM verifier ⇒ P ≠ NP.
 ›
 
-theorem P_neq_NP_under_LR_model:
+theorem P_neq_NP_under_IP:
   fixes enc0 :: "int list ⇒ int ⇒ string"
-  assumes LR: "LR_read_all_solvers_hypothesis enc0"
+  assumes IP: "IP_all_poly_solvers_hypothesis enc0"
   assumes V:  "SS_Verifier_NP k G V p T fverify enc0 enc_cert"
   shows "¬ P_eq_NP"
 proof -
   have NP_enc0: "SUBSETSUM_lang enc0 ∈ 𝒩𝒫"
     using SUBSETSUM_in_NP_global[OF V] .
-  from P_neq_NP_if_LR_read_all_solvers_hypothesis[OF LR NP_enc0]
-  show "¬ P_eq_NP" .
+  show "¬ P_eq_NP"
+    using P_neq_NP_if_IP_all_poly_solvers_hypothesis[OF IP NP_enc0] .
 qed
 
 end
