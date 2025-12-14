@@ -21,7 +21,7 @@ things with every step:
     verifier).
 
   • If it is a modelling bridge not derivable from Cook–Levin semantics alone,
-    we state it openly as a single hypothesis (IP / “all poly-time solvers are
+    we state it openly as a single hypothesis (LR_read / “all poly-time solvers are
     LR-read”).
 
 So the citation functions as attribution and motivation, while the mechanised
@@ -47,15 +47,15 @@ A reader-friendly summary of the logical structure:
     SUBSET–SUM *and* it satisfies LR-read (formal locale LR_Read_TM),
     then M cannot run in polynomial time (measured in length as).
 
-(3) This file: one *global modelling hypothesis* (IP)
+(3) This file: one *global modelling hypothesis* (LR_read)
     A polynomial-time solver might preprocess its input and hide the canonical
     left/right structure, so LR-read is not automatic from TM semantics alone.
-    We therefore state IP as a single bridge assumption:
+    We therefore state LR_read as a single bridge assumption:
 
         “Every polynomial-time SUBSET–SUM solver admits an LR-read presentation.”
 
 (4) This file: the final implication
-    IP + (SUBSET–SUM ∈ NP)  ⇒  P ≠ NP.
+    LR_read + (SUBSET–SUM ∈ NP)  ⇒  P ≠ NP.
 
 Acknowledgement:
 The author received assistance from AI systems (ChatGPT by OpenAI and Claude by
@@ -68,7 +68,7 @@ section ‹1. Roadmap›
 text ‹
 This file has three conceptual moves.
 
-  A. State the bridge assumption (IP) cleanly.
+  A. State the bridge assumption (LR_read) cleanly.
      This is the only non-derived hypothesis used in the final theorem.
 
   B. Use it to rule out polynomial-time Cook–Levin solvers for SUBSET–SUM.
@@ -78,7 +78,7 @@ This file has three conceptual moves.
      to conclude ¬(P = NP).
 ›
 
-section ‹2. What exactly is the IP assumption?›
+section ‹2. What exactly is the LR_read assumption?›
 
 text ‹
 Think about the basic task “decide whether L = R”.
@@ -106,7 +106,7 @@ encoding.  So the key modelling question becomes:
   Does a polynomial-time solver still *expose* this unavoidable two-sided
   information flow in an observable way?
 
-The predicate IP (defined later as IP_all_poly_solvers_hypothesis) answers:
+The predicate LR_read (defined later as LR_read_all_poly_solvers_hypothesis) answers:
 yes — it postulates that every polynomial-time solver admits an LR-read
 presentation, i.e. it instantiates the locale LR_Read_TM.
 ›
@@ -256,44 +256,36 @@ definition P_impl_CL_SubsetSum_Solver ::
            CL_SubsetSum_Solver M q0 enc ∧
            polytime_CL_machine M enc))"
 
-definition IP_TM :: "machine ⇒ nat ⇒ (int list ⇒ int ⇒ bool list) ⇒ bool" where
-  "IP_TM M q0 enc ⟷
+definition LR_read_TM :: "machine ⇒ nat ⇒ (int list ⇒ int ⇒ bool list) ⇒ bool" where
+  "LR_read_TM M q0 enc ⟷
      (∃steps_TM seenL_TM seenR_TM.
         LR_Read_TM M q0 enc steps_TM seenL_TM seenR_TM)"
 
-text ‹
-Terminology note.
 
-Here “IP” is not a complexity class and not an NP statement.
-It is simply the name we give to the bridge condition:
-
-  polynomial-time SUBSET–SUM solvers admit an LR-read presentation.
-›
-
-section ‹7. IP-read-all-solvers hypothesis›
+section ‹7. LR_read-read-all-solvers hypothesis›
 
 text ‹
 This is the one modelling assumption used in the final theorem.
 
-IP_all_poly_solvers_hypothesis enc0 consists of two parts:
+LR_read_all_poly_solvers_hypothesis enc0 consists of two parts:
 
   (A) P-to-machine bridge:
       If SUBSET–SUM (with encoding enc0) is in P, then some polynomial-time
       Cook–Levin solver exists.
 
-  (B) Information-flow bridge (the real “IP” content):
-      Every such polynomial-time solver satisfies IP_TM, i.e. admits LR-read.
+  (B) Information-flow bridge (the real “LR_read” content):
+      Every such polynomial-time solver satisfies LR_read_TM.
 
-NP membership is *not* part of IP; NP membership is proved separately via the
+NP membership is *not* part of LR_read; NP membership is proved separately via the
 verifier lemma in Section 4.
 ›
 
-definition IP_all_poly_solvers_hypothesis ::
+definition LR_read_all_poly_solvers_hypothesis ::
   "(int list ⇒ int ⇒ string) ⇒ bool" where
-  "IP_all_poly_solvers_hypothesis enc0 ⟷
+  "LR_read_all_poly_solvers_hypothesis enc0 ⟷
      P_impl_CL_SubsetSum_Solver enc0 ∧
      (∀M q0 enc.
-        CL_SubsetSum_Solver M q0 enc ⟶ polytime_CL_machine M enc ⟶ IP_TM M q0 enc)"
+        CL_SubsetSum_Solver M q0 enc ⟶ polytime_CL_machine M enc ⟶ LR_read_TM M q0 enc)"
 
 section ‹8. Core Conditional Theorem›
 
@@ -304,21 +296,21 @@ Core idea in one paragraph:
 
 Assume P = NP.  Since SUBSET–SUM is in NP, it would then be in P.
 So there would exist a polynomial-time Cook–Levin solver M.
-By IP, M admits LR-read.  But SubsetSum_CookLevin already proves that
+By LR_read, M admits LR-read.  But SubsetSum_CookLevin already proves that
 LR-read solvers cannot be polynomial time.  Contradiction.  Therefore ¬(P = NP).
 ›
 
-lemma P_neq_NP_if_IP_all_poly_solvers_hypothesis:
+lemma P_neq_NP_if_LR_read_all_poly_solvers_hypothesis:
   fixes enc0 :: "int list ⇒ int ⇒ string"
-  assumes H:       "IP_all_poly_solvers_hypothesis enc0"
+  assumes H:       "LR_read_all_poly_solvers_hypothesis enc0"
   assumes NP_enc0: "SUBSETSUM_lang enc0 ∈ 𝒩𝒫"
   shows "¬ P_eq_NP"
 proof -
   from H have
     bridge_P: "P_impl_CL_SubsetSum_Solver enc0" and
-    all_IP:   "∀M q0 enc.
-                CL_SubsetSum_Solver M q0 enc ⟶ polytime_CL_machine M enc ⟶ IP_TM M q0 enc"
-    unfolding IP_all_poly_solvers_hypothesis_def by blast+
+    all_LR_read:   "∀M q0 enc.
+                CL_SubsetSum_Solver M q0 enc ⟶ polytime_CL_machine M enc ⟶ LR_read_TM M q0 enc"
+    unfolding LR_read_all_poly_solvers_hypothesis_def by blast+
 
   show "¬ P_eq_NP"
   proof
@@ -337,10 +329,10 @@ proof -
       poly:   "polytime_CL_machine M enc"
       by blast
 
-    from all_IP solver poly have "IP_TM M q0 enc" by blast
+    from all_LR_read solver poly have "LR_read_TM M q0 enc" by blast
     then obtain steps_TM seenL_TM seenR_TM where lr:
       "LR_Read_TM M q0 enc steps_TM seenL_TM seenR_TM"
-      unfolding IP_TM_def by blast
+      unfolding LR_read_TM_def by blast
 
     interpret LR: LR_Read_TM M q0 enc steps_TM seenL_TM seenR_TM
       by (rule lr)
@@ -369,23 +361,23 @@ section ‹9. Final Packaged Theorem›
 text ‹
 Final packaged statement:
 
-  If IP holds (for enc0) and you have an NP verifier for SUBSET–SUM (for enc0),
+  If LR_read holds (for enc0) and you have an NP verifier for SUBSET–SUM (for enc0),
   then ¬(P = NP).
 
 So the development isolates exactly one remaining “informational” point:
 whether polynomial-time SUBSET–SUM solvers must satisfy LR-read.
 ›
 
-theorem P_neq_NP_under_IP:
+theorem P_neq_NP_under_LR_read:
   fixes enc0 :: "int list ⇒ int ⇒ string"
-  assumes IP: "IP_all_poly_solvers_hypothesis enc0"
+  assumes LR_read: "LR_read_all_poly_solvers_hypothesis enc0"
   assumes V:  "SS_Verifier_NP k G V p T fverify enc0 enc_cert"
   shows "¬ P_eq_NP"
 proof -
   have NP_enc0: "SUBSETSUM_lang enc0 ∈ 𝒩𝒫"
     using SUBSETSUM_in_NP_global[OF V] .
   show "¬ P_eq_NP"
-    using P_neq_NP_if_IP_all_poly_solvers_hypothesis[OF IP NP_enc0] .
+    using P_neq_NP_if_LR_read_all_poly_solvers_hypothesis[OF LR_read NP_enc0] .
 qed
 
 end
