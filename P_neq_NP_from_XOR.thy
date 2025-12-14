@@ -125,8 +125,48 @@ Cook–Levin machines, yielding a lower bound of
 steps on distinct-subset-sums instances of length n.
 ›
 
+section ‹3. Why LR_read is assumed rather than proved›
 
-section ‹3. A global LR-read axiom for Cook–Levin solvers›
+text ‹
+A natural question is why the LR_read predicate is not proved directly
+from the Cook–Levin Turing-machine semantics.
+
+The reason is conceptual rather than technical.
+
+The Cook–Levin model allows a machine to preprocess, compress, and
+reorganise its input arbitrarily before performing any semantic
+distinctions.  Nothing in the bare execution semantics enforces a
+one-to-one correspondence between observable behaviour and the
+canonical left/right candidate values induced by the subset-sum
+decomposition eₖ(as,s).
+
+As a result, the abstract reader-style information principle used in
+SubsetSum_DecisionTree — which reasons in terms of distinguishing
+individual candidate values — does not help itself to a direct
+simulation argument inside the Cook–Levin model.
+
+Proving LR_read from first principles would therefore amount to proving
+a new structural theorem about polynomial-time Turing machines:
+namely, that any such machine deciding equality-type problems must admit
+a presentation in which both sides of the equality are separately
+observed.  This does not follow from the bare Cook–Levin execution
+semantics developed here.  We therefore state LR_read explicitly as a
+modelling hypothesis.
+
+The contribution of the formalisation is to show that:
+
+  • once LR_read is assumed,
+    the exponential lower bound follows *formally*; and
+
+  • LR_read is the *only* non-derived assumption used in the final
+    implication ¬(P = NP).
+
+In this sense, the theory isolates a single, sharply-defined
+information-flow principle as the exact point at which the P versus NP
+question hinges.
+›
+
+section ‹4. A global LR-read axiom for Cook–Levin solvers›
 
 text ‹
 We now state the key bridge axiom in a very direct form:
@@ -135,8 +175,13 @@ We now state the key bridge axiom in a very direct form:
   and runs in polynomial time, then it satisfies LR_Read_TM
   for some choice of observable “seen” sets and a step counter.
 
-Once we have LR_Read_TM, the contradiction with polynomial time is already
-proved in SubsetSum_CookLevin (as no_polytime_CL_on_distinct_family).
+Intuitively, seenL_TM and seenR_TM record which canonical LHS/RHS candidates
+are distinguished by the machine’s observable behaviour. Here LR_Read_TM is 
+the concrete machine-level formalisation of the informal LR_read principle 
+described above. 
+
+Once we have LR_Read_TM, the contradiction with polynomial time is already 
+proved in SubsetSum_CookLevin (as no_polytime_CL_on_distinct_family). 
 We present the implication ‘polytime solver ⇒ LR_Read_TM’ first as a 
 locale-local axiom (for a fixed machine), and later package it as a global 
 hypothesis quantified over all machines.
@@ -227,7 +272,7 @@ qed
 end  (* locale LR_Read_Axiom *)
 
 
-section ‹4. SUBSET–SUM is in NP (formalised)›
+section ‹5. SUBSET–SUM is in NP (formalised)›
 
 text ‹
 We reuse the verifier-based NP result from SubsetSum_CookLevin.
@@ -242,7 +287,7 @@ lemma SUBSETSUM_in_NP_global:
   shows "SUBSETSUM_lang enc0 ∈ 𝒩𝒫"
   using SUBSETSUM_in_NP_from_verifier[OF assms] .
 
-section ‹5. Definition of P = NP›
+section ‹6. Definition of P = NP›
 
 text ‹
 We use the usual language-theoretic definition:
@@ -252,7 +297,7 @@ P = NP means every language is in P exactly when it is in NP.
 definition P_eq_NP :: bool where
   "P_eq_NP ⟷ (∀L::language. (L ∈ 𝒫) = (L ∈ 𝒩𝒫))"
 
-section ‹6. From “SUBSET–SUM ∈ P” to an actual Cook–Levin solver›
+section ‹7. From “SUBSET–SUM ∈ P” to an actual Cook–Levin solver›
 
 text ‹
 This is just a bridge from *language complexity* to *machine existence*:
@@ -280,7 +325,7 @@ definition admits_LR_read_TM ::
         LR_Read_TM M q0 enc steps_TM seenL_TM seenR_TM)"
 
 
-section ‹7. LR_read-read-all-solvers hypothesis›
+section ‹8. Global LR_read hypothesis›
 
 text ‹
 This is the one modelling assumption used in the final theorem.
@@ -289,7 +334,9 @@ LR_read_all_poly_solvers_hypothesis enc0 consists of two parts:
 
   (A) A realisability axiom linking the abstract class 𝒫 to Cook–Levin machines:
       If SUBSET–SUM (with encoding enc0) is in P, then some polynomial-time
-      Cook–Levin solver exists.
+      Cook–Levin solver exists. Part (A) is a standard “complexity class ⇒ machine” 
+      bridge: it says that membership in 𝒫 is witnessed by some polynomial-time 
+      Cook–Levin machine.
 
   (B) Information-flow bridge (the real “LR_read” content):
       Every such polynomial-time solver admits LR-read, i.e. satisfies 
@@ -307,7 +354,7 @@ definition LR_read_all_poly_solvers_hypothesis ::
         CL_SubsetSum_Solver M q0 enc ⟶ polytime_CL_machine M enc ⟶ 
         admits_LR_read_TM M q0 enc)"
 
-section ‹8. Core Conditional Theorem›
+section ‹9. Core Conditional Theorem›
 
 text ‹
 Core idea in one paragraph:
@@ -377,7 +424,7 @@ proof -
   qed
 qed
 
-section ‹9. Final Packaged Theorem›
+section ‹10. Final Packaged Theorem›
 
 text ‹
 Final packaged statement:
