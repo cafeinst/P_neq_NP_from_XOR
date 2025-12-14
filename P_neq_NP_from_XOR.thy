@@ -75,10 +75,11 @@ text ‹
 Think first about the elementary task: deciding whether two integers L and R
 are equal.
 
-At the most basic level, correctness requires information from both sides.
-If a solver never distinguishes one side, an adversary can vary that unseen
-value while keeping all observed information fixed, causing the solver to
-behave identically even though the truth of L=R changes.
+When L and R are only accessible through queries, correctness requires 
+information from both sides. If a solver never distinguishes one side, an 
+adversary can vary that unseen value while keeping all observed information 
+fixed, causing the solver to behave identically even though the truth of L=R 
+changes.
 
 By itself, this principle concerns only a single pair of integers.  Its force
 in the SUBSET–SUM setting comes from the canonical split of the verification
@@ -286,7 +287,7 @@ This is the one modelling assumption used in the final theorem.
 
 LR_read_all_poly_solvers_hypothesis enc0 consists of two parts:
 
-  (A) P-to-machine bridge:
+  (A) A realisability axiom linking the abstract class 𝒫 to Cook–Levin machines:
       If SUBSET–SUM (with encoding enc0) is in P, then some polynomial-time
       Cook–Levin solver exists.
 
@@ -315,6 +316,8 @@ Assume P = NP.  Since SUBSET–SUM is in NP, it would then be in P.
 So there would exist a polynomial-time Cook–Levin solver M.
 By LR_read, M admits LR-read.  But SubsetSum_CookLevin already proves that
 LR-read solvers cannot be polynomial time.  Contradiction.  Therefore ¬(P = NP).
+Equivalently: the development proves LR_read_all_poly_solvers_hypothesis enc0 ⟹ 
+¬ P_eq_NP.
 ›
 
 lemma P_neq_NP_if_LR_read_all_poly_solvers_hypothesis:
