@@ -1,4 +1,4 @@
-theory SubsetSum_PneqNP
+theory SubsetSum_LowerBounds
   imports SubsetSum_CookLevin
 begin
 
