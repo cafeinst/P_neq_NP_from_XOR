@@ -2,7 +2,7 @@ theory SubsetSum_PneqNP
   imports SubsetSum_CookLevin
 begin
 
-text \<open>
+text ‹
 \paragraph{Where the idea comes from.}
 
 This development is inspired by the informal lower-bound discussion in
@@ -23,9 +23,31 @@ proved explicitly.  The remaining ingredient --- an additional interface
 property exposing the left/right candidate structure needed to transfer the
 abstract decision-tree bound --- is stated openly as a modelling hypothesis
 (\emph{LR-read}).
-\<close>
+›
 
-text \<open>
+text ‹
+\paragraph{Important scope note.}
+
+All complexity bounds in this development measure input size as
+\verb|length as| (the number of weights), not the bit-length of the encoded
+instance \verb|enc0 as s|.
+
+Accordingly:
+
+\begin{itemize}
+\item This is \emph{not} a proof of $\mathcal{P} \neq \mathcal{NP}$ in the
+      standard bit-complexity sense.
+\item The final theorem is a conditional implication relative to an explicit
+      information-flow hypothesis (LR-read) and a nonstandard size measure.
+\item No claim of robustness under changes of instance encoding is made.
+\end{itemize}
+
+The purpose of this theory is to isolate and formalise a precise
+information-flow principle under which a $\mathcal{P} \neq \mathcal{NP}$
+implication follows.
+›
+
+text ‹
 \bigskip
 \begin{center}
 \textbf{A conditional proof that $\mathcal{P} \neq \mathcal{NP}$ from an information-flow principle}
@@ -68,11 +90,11 @@ The author received assistance from AI systems (ChatGPT by OpenAI and Claude by
 Anthropic) in drafting explanatory text and in iteratively refining Isabelle/HOL
 proof scripts.  All formal results and final proofs are the responsibility of
 the author.
-\<close>
+›
 
-section \<open>Roadmap\<close>
+section ‹Roadmap›
 
-text \<open>
+text ‹
 This file has three conceptual stages.
 
 \begin{itemize}
@@ -89,11 +111,11 @@ This file has three conceptual stages.
       SUBSET--SUM \(\in \mathcal{P}\), yielding the conclusion
       \(\neg(\mathcal{P} = \mathcal{NP})\).
 \end{itemize}
-\<close>
+›
 
-section \<open>The LR-read assumption\<close>
+section ‹The LR-read assumption›
 
-text \<open>
+text ‹
 We begin with the elementary task of deciding whether two integers
 \verb|L| and \verb|R| are equal.
 
@@ -136,11 +158,11 @@ subsets that differ in whether an equality \verb|L = R| exists.
 
 This per-candidate requirement is exactly what drives the abstract reader
 lower bound proved earlier.
-\<close>
+›
 
-section \<open>Why LR-read is assumed rather than proved\<close>
+section ‹Why LR-read is assumed rather than proved›
 
-text \<open>
+text ‹
 A natural question is why the predicate \verb|LR_read| is not proved
 directly from the Cook--Levin Turing-machine semantics.
 
@@ -193,11 +215,11 @@ The present formalisation differs only in that this restriction is made
 explicit as a separate predicate rather than being built silently into
 the computational model.  Once stated, the resulting lower bound follows
 formally.
-\<close>
+›
 
-section \<open>A global LR-read axiom for Cook--Levin solvers\<close>
+section ‹A global LR-read axiom for Cook--Levin solvers›
 
-text \<open>
+text ‹
 We now state the key bridge axiom in a direct form.
 
 If a Cook--Levin machine \verb|M| correctly decides SUBSET--SUM and runs in
@@ -216,7 +238,7 @@ already established in \verb|SubsetSum_CookLevin| (as
 implication ``polynomial-time solver implies LR-read'' as a locale-local
 axiom for a fixed machine, and later package it as a global hypothesis
 quantified over all machines.
-\<close>
+›
 
 locale LR_Read_Axiom =
   fixes M   :: machine
@@ -229,7 +251,7 @@ locale LR_Read_Axiom =
            LR_Read_TM M q0 enc steps_TM seenL_TM seenR_TM"
 begin
 
-text \<open>
+text ‹
 Main consequence inside this locale.
 
 Under the assumption \emph{LR\_Read\_Axiom}, there exists no polynomial-time
@@ -244,7 +266,7 @@ machine's running time on the family of instances with
 
 Thus the LR-read assumption, when combined with polynomial-time solvability,
 leads to a contradiction inside this locale.
-\<close>
+›
 
 lemma no_polytime_CL_SubsetSum_solver:
   assumes solver: "CL_SubsetSum_Solver M q0 enc"
@@ -292,10 +314,10 @@ proof -
     by blast
 qed
 
-text \<open>
+text ‹
 A convenient corollary is that, assuming \verb|LR_Read_Axiom|, there exists
 no polynomial-time Cook--Levin machine that solves SUBSET--SUM.
-\<close>
+›
 
 corollary no_polytime_SubsetSum:
   assumes solver: "CL_SubsetSum_Solver M q0 enc"
@@ -308,9 +330,9 @@ qed
 
 end  (* locale LR_Read_Axiom *)
 
-section \<open>SUBSET--SUM is in NP (formalised)\<close>
+section ‹SUBSET--SUM is in NP (formalised)›
 
-text \<open>
+text ‹
 We reuse the verifier-based NP result established in
 \verb|SubsetSum_CookLevin|.
 
@@ -318,28 +340,28 @@ In particular, if a standard NP verifier package
 \verb|SS_Verifier_NP| is provided, then the language
 \verb|SUBSETSUM_lang enc0| belongs to the class
 \(\mathcal{NP}\).
-\<close>
+›
 
 lemma SUBSETSUM_in_NP_global:
   assumes "SS_Verifier_NP k G V p T fverify enc0 enc_cert"
   shows "SUBSETSUM_lang enc0 ∈ 𝒩𝒫"
   using SUBSETSUM_in_NP_from_verifier[OF assms] .
 
-section \<open>Definition of \(\mathcal{P} = \mathcal{NP}\)\<close>
+section ‹Definition of \(\mathcal{P} = \mathcal{NP}\)›
 
-text \<open>
+text ‹
 We use the standard language-theoretic definition.
 
 The equality \(\mathcal{P} = \mathcal{NP}\) means that a language belongs to
 \(\mathcal{P}\) if and only if it belongs to \(\mathcal{NP}\).
-\<close>
+›
 
 definition P_eq_NP :: bool where
   "P_eq_NP ⟷ (∀L::language. (L ∈ 𝒫) = (L ∈ 𝒩𝒫))"
 
-section \<open>From \(\mathcal{P}\)-membership to a Cook--Levin solver\<close>
+section ‹From \(\mathcal{P}\)-membership to a Cook--Levin solver›
 
-text \<open>
+text ‹
 This section provides a bridge from \emph{language complexity} to
 \emph{machine existence}.
 
@@ -357,7 +379,7 @@ Here \verb|enc0| is the string encoding used to define the language
 \verb|SUBSETSUM_lang enc0|, while the Cook--Levin solver may operate on its
 own Boolean encoding \verb|enc|.  The bridge axiom therefore relates only
 the language, not the concrete encodings.
-\<close>
+›
 
 definition P_impl_CL_SubsetSum_Solver ::
   "(int list ⇒ int ⇒ string) ⇒ bool" where
@@ -374,9 +396,9 @@ definition admits_LR_read_TM ::
         LR_Read_TM M q0 enc steps_TM seenL_TM seenR_TM)"
 
 
-section \<open>Global LR\_read hypothesis\<close>
+section ‹Global LR\_read hypothesis›
 
-text \<open>
+text ‹
 This section states the single modelling assumption used in the final
 conditional implication.
 
@@ -400,7 +422,7 @@ two logically distinct components.
 No NP-membership assumption is included in this hypothesis.
 Membership of SUBSET--SUM in \(\mathcal{NP}\) is established independently,
 via the verifier construction formalised earlier.
-\<close>
+›
 
 definition LR_read_all_poly_solvers_hypothesis ::
   "(int list ⇒ int ⇒ string) ⇒ bool" where
@@ -410,9 +432,9 @@ definition LR_read_all_poly_solvers_hypothesis ::
         CL_SubsetSum_Solver M q0 enc ⟶ polytime_CL_machine M enc ⟶ 
         admits_LR_read_TM M q0 enc)"
 
-section \<open>Core conditional theorem\<close>
+section ‹Core conditional theorem›
 
-text \<open>
+text ‹
 The core argument can be summarised in a single paragraph.
 
 Assume \(\mathcal{P} = \mathcal{NP}\).
@@ -436,7 +458,7 @@ Formally, the theory proves the implication
   \verb|LR_read_all_poly_solvers_hypothesis enc0| \;\Longrightarrow\;
   \neg (\mathcal{P} = \mathcal{NP}).
 \]
-\<close>
+›
 
 lemma P_neq_NP_if_LR_read_all_poly_solvers_hypothesis:
   fixes enc0 :: "int list ⇒ int ⇒ string"
@@ -495,9 +517,9 @@ proof -
   qed
 qed
 
-section \<open>Final packaged theorem\<close>
+section ‹Final packaged theorem›
 
-text \<open>
+text ‹
 The final result can now be stated in a single packaged form.
 
 If the LR-read hypothesis holds for the instance encoding \verb|enc0|, and
@@ -520,7 +542,7 @@ Thus the entire argument isolates a single remaining informational question:
 whether polynomial-time SUBSET--SUM solvers must satisfy the LR-read
 information-flow condition.  All other components of the argument are
 fully formalised within Isabelle/HOL.
-\<close>
+›
 
 theorem P_neq_NP_under_LR_read:
   fixes enc0 :: "int list ⇒ int ⇒ string"
