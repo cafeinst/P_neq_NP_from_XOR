@@ -119,12 +119,10 @@ text ‹
 We begin with the elementary task of deciding whether two integers
 \verb|L| and \verb|R| are equal.
 
-When \verb|L| and \verb|R| are accessible only through queries, correctness
-requires that a solver obtain information from \emph{both} sides.  If one
-side were never distinguished in the solver's observable behaviour, an
-adversary could vary that unseen value while keeping all observed
-information fixed, causing the solver to behave identically even though
-the truth of \verb|L = R| changes.
+Suppose the solver does not initially know the values of \verb|L| and \verb|R|,
+and can obtain information about them only through its observable interactions
+with the input.  Then correctness requires that the solver obtain some
+distinguishing information from \emph{both} sides.
 
 By itself, this observation concerns only a single pair of integers.
 Its relevance to SUBSET--SUM arises from the canonical split of the
