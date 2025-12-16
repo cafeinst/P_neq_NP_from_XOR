@@ -1,204 +1,222 @@
-theory SubsetSum_LowerBounds
+theory SubsetSum_PneqNP
   imports SubsetSum_CookLevin
 begin
 
-text ‹
-Where the idea comes from.
+text \<open>
+\paragraph{Where the idea comes from.}
 
 This development is inspired by the informal lower-bound discussion in
 
-  C. A. Feinstein, “Dialogue Concerning the Two Chief World Views,” arXiv:1605.08639.
+\begin{quote}
+C.\ A.\ Feinstein, \emph{``Dialogue Concerning the Two Chief World Views,''}
+arXiv:1605.08639.
+\end{quote}
 
 The paper is used purely as motivation: no statement from it is imported as a
 formal fact.  Instead, we extract a single modelling principle suggested by the
-informal reasoning and formalise it in Isabelle/HOL—an information-flow
+informal reasoning and formalise it in Isabelle/HOL: an information-flow
 requirement governing how a solver must obtain and use information in order to
-decide whether an equality ‹L = R› can hold.
+decide whether an equality \verb|L = R| can hold.
 
-Everything that is needed from the standard Cook–Levin Turing-machine semantics 
-is proved explicitly. The remaining ingredient—an additional interface property 
-exposing the left/right candidate structure required to transfer the abstract 
-decision-tree bound—is stated openly as a modelling hypothesis (LR-read).
-›
+Everything required from the standard Cook--Levin Turing-machine semantics is
+proved explicitly.  The remaining ingredient --- an additional interface
+property exposing the left/right candidate structure needed to transfer the
+abstract decision-tree bound --- is stated openly as a modelling hypothesis
+(\emph{LR-read}).
+\<close>
 
-text ‹
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                             %
-%      A CONDITIONAL PROOF THAT P ≠ NP FROM AN INFORMATION–FLOW PRINCIPLE     %
-%                                                                             %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+text \<open>
+\bigskip
+\begin{center}
+\textbf{A conditional proof that $\mathcal{P} \neq \mathcal{NP}$ from an information-flow principle}
+\end{center}
+\bigskip
 
-A reader-friendly summary of the logical structure:
+\paragraph{A reader-friendly summary of the logical structure.}
 
-(1) An abstract lower bound.
-    In SubsetSum_DecisionTree we prove that any solver satisfying a simple
-    information-flow condition (formalised there as a candidate-distinguishing 
-    information-flow assumption) must take Ω(√(2^n)) steps on 
-    distinct-subset-sums instances.
+\begin{enumerate}
+\item \textbf{An abstract lower bound.}
+  In \verb|SubsetSum_DecisionTree| we prove that any solver satisfying a simple
+  information-flow condition (formalised there as a candidate-distinguishing
+  assumption) must take $\Omega(\sqrt{2^n})$ steps on instances with
+  \verb|distinct_subset_sums as|.
 
-(2) Transfer to Cook–Levin machines.
-    In SubsetSum_CookLevin we show that any Cook–Levin machine that both
-    solves SUBSET–SUM and satisfies LR_read inherits this lower bound.
+\item \textbf{Transfer to Cook--Levin machines.}
+  In \verb|SubsetSum_CookLevin| we show that any Cook--Levin machine that
+  decides SUBSET--SUM and satisfies \emph{LR-read} inherits this lower bound.
 
-(3) A single modelling bridge.
-    Because Cook–Levin machines may preprocess and reorganise the encoding 
-    arbitrarily, LR_read is not a semantic consequence of the model and must be 
-    assumed explicitly.  We therefore state one global hypothesis:
+\item \textbf{A single modelling bridge.}
+  Because Cook--Levin machines may preprocess and reorganise the encoding
+  arbitrarily, \emph{LR-read} is not a semantic consequence of the model and
+  must be assumed explicitly.  We therefore state one global hypothesis:
 
-        Every polynomial-time SUBSET–SUM solver admits an LR-read presentation.
+  \begin{quote}
+  Every polynomial-time SUBSET--SUM solver admits an LR-read presentation.
+  \end{quote}
 
-    Formally, this assumption is packaged below as
-    ‹LR_read_all_poly_solvers_hypothesis enc0›.
+  Formally, this assumption is packaged below as
+  \verb|LR_read_all_poly_solvers_hypothesis enc0|.
 
-(4) Final implication.
-    Under this hypothesis, combining SUBSET–SUM ∈ NP with the consequence of 
-    P = NP (namely SUBSET–SUM ∈ P) yields ¬(P = NP).
+\item \textbf{Final implication.}
+  Under this hypothesis, combining SUBSET--SUM $\in \mathcal{NP}$ with the
+  consequence of $\mathcal{P} = \mathcal{NP}$ (namely SUBSET--SUM $\in \mathcal{P}$)
+  yields $\neg(\mathcal{P} = \mathcal{NP})$.
+\end{enumerate}
 
-Acknowledgement:
+\paragraph{Acknowledgement.}
 The author received assistance from AI systems (ChatGPT by OpenAI and Claude by
 Anthropic) in drafting explanatory text and in iteratively refining Isabelle/HOL
-proof scripts. All formal results and final proofs are the responsibility of the
-author.
-›
+proof scripts.  All formal results and final proofs are the responsibility of
+the author.
+\<close>
 
-section ‹1. Roadmap›
+section \<open>Roadmap\<close>
 
-text ‹
+text \<open>
 This file has three conceptual stages.
 
-  A. State the bridge assumption (LR_read) cleanly.
-     This is the only non-derived hypothesis used in the final theorem.
+\begin{itemize}
+\item We state the bridge assumption \emph{LR-read} cleanly.
+      This is the only non-derived hypothesis used in the final theorem.
 
-  B. Use it to rule out polynomial-time Cook–Levin solvers for SUBSET–SUM.
-     (Because Cook–Levin + LR-read implies an Ω(√(2^n)) lower bound on a distinct family.)
+\item We use this assumption to rule out polynomial-time Cook--Levin solvers
+      for SUBSET--SUM, by transferring an
+      \(\Omega(\sqrt{2^n})\) lower bound to the machine level on a canonical
+      family of instances.
 
-  C. Combine that with “SUBSET–SUM ∈ NP” and “P = NP ⇒ SUBSET–SUM ∈ P”
-     to conclude ¬(P = NP).
-›
+\item We combine this with the facts that SUBSET--SUM lies in
+      \(\mathcal{NP}\) and that \(\mathcal{P} = \mathcal{NP}\) implies
+      SUBSET--SUM \(\in \mathcal{P}\), yielding the conclusion
+      \(\neg(\mathcal{P} = \mathcal{NP})\).
+\end{itemize}
+\<close>
 
-section ‹2. What exactly is the LR_read assumption?›
+section \<open>The LR-read assumption\<close>
 
-text ‹
-Begin with the elementary task of deciding whether two integers ‹L› and ‹R›
-are equal.
+text \<open>
+We begin with the elementary task of deciding whether two integers
+\verb|L| and \verb|R| are equal.
 
-When ‹L› and ‹R› are accessible only through queries, correctness requires that
-a solver obtain information from *both* sides.  If one side were never distinguished 
-in the solver’s observable behaviour, an adversary could vary that unseen value while 
-keeping all observed information fixed, causing the solver to behave identically even
-though the truth of ‹L = R› changes.
+When \verb|L| and \verb|R| are accessible only through queries, correctness
+requires that a solver obtain information from \emph{both} sides.  If one
+side were never distinguished in the solver's observable behaviour, an
+adversary could vary that unseen value while keeping all observed
+information fixed, causing the solver to behave identically even though
+the truth of \verb|L = R| changes.
 
-By itself, this observation concerns only a *single pair* of integers.
-Its relevance to SUBSET–SUM comes from the canonical split of the verification
-equation.
+By itself, this observation concerns only a single pair of integers.
+Its relevance to SUBSET--SUM arises from the canonical split of the
+verification equation.
 
-For any split position ‹k›, the decomposition ‹eₖ(as,s)› gives rise to two
-families of possible integer values:
+For any split position \verb|k|, the decomposition \verb|e_k (as, s)|
+gives rise to two families of possible integer values:
 
-  • ‹LHS(eₖ as s)› — up to ‹2^k› possible left-hand values,
-  • ‹RHS(eₖ as s)› — up to ‹2^(n − k)› possible right-hand values.
+\begin{itemize}
+\item \verb|LHS (e_k as s k)|, containing up to \verb|2^k| left-hand values;
+\item \verb|RHS (e_k as s k)|, containing up to \verb|2^(n - k)| right-hand values.
+\end{itemize}
 
 Each element of these sets is a concrete integer that the left-hand or
-right-hand side of the equation *could* take under some hidden choice of the
-0/1 vector ‹xs› consistent with the same instance ‹(as,s)›.
+right-hand side of the equation could take under some hidden choice of
+the Boolean vector \verb|xs| consistent with the same instance
+\verb|(as, s)|.
 
 In an information-flow (reader-style) model, correctness is expressed by
-requiring that, for some split ‹k›, the solver’s *observable behaviour*
-distinguish all canonical candidates on both sides.  If some candidate value
-were never distinguished, the solver could not reliably tell the difference
-between instances with and without a valid equality.
+requiring that, for some split position \verb|k|, the solver's observable
+behaviour distinguish all canonical candidates on both sides.  If some
+candidate value were never distinguished, the solver could not reliably
+tell the difference between instances with and without a valid equality.
 
-Viewed through the basic equality principle, this yields a per-candidate
-requirement: for some split position ‹k›, a correct solver must effectively
-distinguish *every* possible numerical value in both
-‹LHS(eₖ as s)› and ‹RHS(eₖ as s)›.  Otherwise, an adversary could keep the
-solver’s observations fixed while choosing hidden subsets that differ in
-whether an equality ‹L = R› exists.
+Viewed through this basic equality principle, we obtain a per-candidate
+requirement: for some split position \verb|k|, a correct solver must
+effectively distinguish every possible numerical value in both
+\verb|LHS (e_k as s k)| and \verb|RHS (e_k as s k)|.  Otherwise, an
+adversary could keep the solver's observations fixed while choosing hidden
+subsets that differ in whether an equality \verb|L = R| exists.
 
 This per-candidate requirement is exactly what drives the abstract reader
 lower bound proved earlier.
+\<close>
 
-The difficulty arises when we move to the Cook–Levin Turing-machine model.
-A machine may read its entire input and then preprocess it freely—reordering,
-copying, or compressing information, or computing derived representations.
-As a result, the canonical left/right structure exposed by the split
-‹eₖ(as,s)› need not remain visible at the level of individual machine steps,
-and the standard adversary argument no longer enforces per-candidate
-distinction.
+section \<open>Why LR-read is assumed rather than proved\<close>
 
-The predicate ‹LR_read› captures precisely this missing structure.
-It asserts that, for some split position ‹k›, the machine’s observable
-behaviour exposes exactly the canonical left-hand and right-hand candidate
-values induced by ‹eₖ(as,s)›.
-
-Under this assumption, the abstract decision-tree lower bound transfers to
-Cook–Levin machines, yielding a lower bound of
-
-    Ω(√(2^n))
-
-steps on distinct-subset-sums instances of length ‹n›.
-›
-
-section ‹3. Why LR_read is assumed rather than proved›
-
-text ‹
-A natural question is why the LR_read predicate is not proved directly
-from the Cook–Levin Turing-machine semantics.
+text \<open>
+A natural question is why the predicate \verb|LR_read| is not proved
+directly from the Cook--Levin Turing-machine semantics.
 
 The reason is conceptual rather than technical.
 
-The Cook–Levin model allows a machine to preprocess, compress, and
+The Cook--Levin model permits a machine to preprocess, compress, and
 reorganise its input arbitrarily before performing any semantic
-distinctions.  Nothing in the bare execution semantics enforces a
-one-to-one correspondence between observable behaviour and the
-canonical left/right candidate values induced by the subset-sum
-decomposition eₖ(as,s).
+distinctions.  Nothing in the execution semantics alone enforces a
+correspondence between a machine's observable behaviour and the canonical
+left/right candidate values induced by the subset-sum decomposition
+\verb|e_k (as, s)|.
 
-As a result, the abstract reader-style information principle used in
-SubsetSum_DecisionTree — which reasons in terms of distinguishing
-individual candidate values — does not automatically transfer to the
-Cook–Levin model.  Nothing in the bare Cook–Levin execution semantics
-forces a machine’s observable behaviour to expose these distinctions.
+As a result, the abstract information-flow principle used in
+\verb|SubsetSum_DecisionTree|, which reasons in terms of distinguishing
+individual candidate values, does not directly transfer to the
+Cook--Levin model.  The semantics do not require a machine's observable
+behaviour to expose these distinctions at the level needed for a
+per-candidate adversary argument.
 
-Establishing LR_read from first principles would require an additional 
-structural theorem about how polynomial-time solvers must expose 
-left/right information in their observable behaviour. This does not 
-follow from the bare Cook–Levin execution semantics developed here, so 
-we state LR_read explicitly as a modelling hypothesis.
+Establishing \verb|LR_read| from first principles would therefore require
+an additional structural theorem about polynomial-time Turing machines,
+namely that any such machine deciding equality-type problems admits a
+presentation in which canonical left-hand and right-hand candidate values
+are separately observable.  This does not follow from the Cook--Levin
+execution semantics developed here and is therefore stated explicitly as a
+modelling hypothesis.
 
-The contribution of the formalisation is to show that:
+The contribution of the present formalisation is to show that:
 
-  • once LR_read is assumed,
-    the exponential lower bound follows *formally*; and
+\begin{itemize}
+\item once \verb|LR_read| is assumed, the exponential lower bound follows
+      formally; and
+\item \verb|LR_read| is the only non-derived assumption used in the final
+      conditional implication \verb|¬ P_eq_NP|.
+\end{itemize}
 
-  • LR_read is the *only* non-derived assumption used in the final
-    implication ¬(P = NP).
+In this sense, the theory isolates a single, sharply defined
+information-flow predicate as the exact point on which the present
+conditional implication hinges.
 
-In this sense, the theory isolates a single, sharply-defined
-information-flow principle as the exact point at which the P versus NP
-question hinges.
-›
+From a methodological perspective, the role played by \verb|LR_read| is
+not unusual in complexity-theoretic lower-bound arguments.  Most known
+unconditional lower bounds are proved relative to models that impose
+explicit or implicit structural restrictions on how information may be
+accessed or combined, such as monotonicity, bounded fan-in, fixed
+communication partitions, read-once conditions, or explicit query
+interfaces.
 
-section ‹4. A global LR-read axiom for Cook–Levin solvers›
+The present formalisation differs only in that this restriction is made
+explicit as a separate predicate rather than being built silently into
+the computational model.  Once stated, the resulting lower bound follows
+formally.
+\<close>
 
-text ‹
-We now state the key bridge axiom in a very direct form:
+section \<open>A global LR-read axiom for Cook--Levin solvers\<close>
 
-  If a Cook–Levin machine M correctly decides SUBSET–SUM
-  and runs in polynomial time, then it satisfies LR_Read_TM
-  for some choice of observable “seen” sets and a step counter.
+text \<open>
+We now state the key bridge axiom in a direct form.
 
-Intuitively, seenL_TM and seenR_TM record which canonical LHS/RHS candidates
-are distinguished by the machine’s observable behaviour. Here LR_Read_TM is 
-the concrete machine-level formalisation of the informal LR_read principle 
-described above. 
+If a Cook--Levin machine \verb|M| correctly decides SUBSET--SUM and runs in
+polynomial time, then it satisfies the locale \verb|LR_Read_TM| for some
+choice of observable ``seen'' sets and a step counter.
 
-Once we have LR_Read_TM, the contradiction with polynomial time is already 
-proved in SubsetSum_CookLevin (as no_polytime_CL_on_distinct_family). 
-We present the implication ‘polytime solver ⇒ LR_Read_TM’ first as a 
-locale-local axiom (for a fixed machine), and later package it as a global 
-hypothesis quantified over all machines.
-›
+Intuitively, \verb|seenL_TM| and \verb|seenR_TM| record which canonical
+left-hand and right-hand candidates are distinguished by the machine's
+observable behaviour.  The locale \verb|LR_Read_TM| is the concrete
+machine-level formalisation of the informal LR-read principle described
+above.
+
+Once \verb|LR_Read_TM| holds, the contradiction with polynomial time is
+already established in \verb|SubsetSum_CookLevin| (as
+\verb|no_polytime_CL_on_distinct_family|).  We therefore first present the
+implication ``polynomial-time solver implies LR-read'' as a locale-local
+axiom for a fixed machine, and later package it as a global hypothesis
+quantified over all machines.
+\<close>
 
 locale LR_Read_Axiom =
   fixes M   :: machine
@@ -211,15 +229,22 @@ locale LR_Read_Axiom =
            LR_Read_TM M q0 enc steps_TM seenL_TM seenR_TM"
 begin
 
-text ‹
-Main consequence inside this locale:
+text \<open>
+Main consequence inside this locale.
 
-  Under LR_Read_Axiom, *no* polynomial-time Cook–Levin SUBSET–SUM solver exists.
+Under the assumption \emph{LR\_Read\_Axiom}, there exists no polynomial-time
+Cook--Levin solver for SUBSET--SUM.
 
-Reason: if M were polynomial-time, the axiom gives LR_Read_TM for M, and the
-Cook–Levin development already shows that LR_Read_TM implies an exponential
-lower bound on distinct-subset-sums instances.
-›
+The reason is as follows.  If a Cook--Levin machine \verb|M| were to decide
+SUBSET--SUM in polynomial time, the axiom would yield an instance of
+\verb|LR_Read_TM| for \verb|M|.  However, the Cook--Levin development already
+establishes that \verb|LR_Read_TM| implies an exponential lower bound on the
+machine's running time on the family of instances with
+\verb|distinct_subset_sums as|.
+
+Thus the LR-read assumption, when combined with polynomial-time solvability,
+leads to a contradiction inside this locale.
+\<close>
 
 lemma no_polytime_CL_SubsetSum_solver:
   assumes solver: "CL_SubsetSum_Solver M q0 enc"
@@ -267,10 +292,10 @@ proof -
     by blast
 qed
 
-text ‹
-  A convenient corollary: assuming ‹LR_Read_Axiom›, there is
-  no polynomial-time Cook–Levin machine that solves SUBSET-SUM.
-›
+text \<open>
+A convenient corollary is that, assuming \verb|LR_Read_Axiom|, there exists
+no polynomial-time Cook--Levin machine that solves SUBSET--SUM.
+\<close>
 
 corollary no_polytime_SubsetSum:
   assumes solver: "CL_SubsetSum_Solver M q0 enc"
@@ -283,48 +308,56 @@ qed
 
 end  (* locale LR_Read_Axiom *)
 
+section \<open>SUBSET--SUM is in NP (formalised)\<close>
 
-section ‹5. SUBSET–SUM is in NP (formalised)›
+text \<open>
+We reuse the verifier-based NP result established in
+\verb|SubsetSum_CookLevin|.
 
-text ‹
-We reuse the verifier-based NP result from SubsetSum_CookLevin.
-
-Interpretation:
-if you provide a standard NP verifier package (SS_Verifier_NP),
-then the language SUBSETSUM_lang enc0 belongs to NP.
-›
+In particular, if a standard NP verifier package
+\verb|SS_Verifier_NP| is provided, then the language
+\verb|SUBSETSUM_lang enc0| belongs to the class
+\(\mathcal{NP}\).
+\<close>
 
 lemma SUBSETSUM_in_NP_global:
   assumes "SS_Verifier_NP k G V p T fverify enc0 enc_cert"
   shows "SUBSETSUM_lang enc0 ∈ 𝒩𝒫"
   using SUBSETSUM_in_NP_from_verifier[OF assms] .
 
-section ‹6. Definition of P = NP›
+section \<open>Definition of \(\mathcal{P} = \mathcal{NP}\)\<close>
 
-text ‹
-We use the usual language-theoretic definition:
-P = NP means every language is in P exactly when it is in NP.
-›
+text \<open>
+We use the standard language-theoretic definition.
+
+The equality \(\mathcal{P} = \mathcal{NP}\) means that a language belongs to
+\(\mathcal{P}\) if and only if it belongs to \(\mathcal{NP}\).
+\<close>
 
 definition P_eq_NP :: bool where
   "P_eq_NP ⟷ (∀L::language. (L ∈ 𝒫) = (L ∈ 𝒩𝒫))"
 
-section ‹7. From “SUBSET–SUM ∈ P” to an actual Cook–Levin solver›
+section \<open>From \(\mathcal{P}\)-membership to a Cook--Levin solver\<close>
 
-text ‹
-This is just a bridge from *language complexity* to *machine existence*:
+text \<open>
+This section provides a bridge from \emph{language complexity} to
+\emph{machine existence}.
 
-If SUBSET–SUM (with instance encoding enc0) is in P,
-then there exists some Cook–Levin machine M with some Boolean encoding enc
-that decides SUBSET–SUM and runs in polynomial time.
+If SUBSET--SUM (with instance encoding \verb|enc0|) belongs to
+\(\mathcal{P}\), then there exists a Cook--Levin Turing machine \verb|M|,
+together with some Boolean encoding \verb|enc|, such that \verb|M| decides
+SUBSET--SUM correctly and runs in polynomial time.
 
-We keep this separate because the solver’s encoding enc need not equal the
-verifier’s encoding enc0; only the *language* matters.
+We keep this bridge explicit because the solver's encoding \verb|enc| need
+not coincide with the language-level encoding \verb|enc0|.  Only the
+language \verb|SUBSETSUM_lang enc0| is relevant to the complexity-theoretic
+statement.
 
-Here enc0 is the string encoding used to define the language SUBSETSUM_lang enc0, 
-while the Cook–Levin solver may use its own Boolean encoding enc. The bridge 
-axiom only relates the language, not the concrete encodings.
-›
+Here \verb|enc0| is the string encoding used to define the language
+\verb|SUBSETSUM_lang enc0|, while the Cook--Levin solver may operate on its
+own Boolean encoding \verb|enc|.  The bridge axiom therefore relates only
+the language, not the concrete encodings.
+\<close>
 
 definition P_impl_CL_SubsetSum_Solver ::
   "(int list ⇒ int ⇒ string) ⇒ bool" where
@@ -341,25 +374,33 @@ definition admits_LR_read_TM ::
         LR_Read_TM M q0 enc steps_TM seenL_TM seenR_TM)"
 
 
-section ‹8. Global LR_read hypothesis›
+section \<open>Global LR\_read hypothesis\<close>
 
-text ‹
-This is the one modelling assumption used in the final theorem.
+text \<open>
+This section states the single modelling assumption used in the final
+conditional implication.
 
-LR_read_all_poly_solvers_hypothesis enc0 consists of two parts:
+The predicate \verb|LR_read_all_poly_solvers_hypothesis enc0| consists of
+two logically distinct components.
 
-  (A) A realisability axiom linking the complexity class P to Cook–Levin machines:
-      If SUBSET–SUM (with encoding enc0) is in P, then there exists a
-      polynomial-time Cook–Levin solver for it.
+\begin{itemize}
+\item \emph{Realisability bridge (complexity to machines).}
+      If SUBSET--SUM (with instance encoding \verb|enc0|) belongs to
+      \(\mathcal{P}\), then there exists a Cook--Levin Turing machine that
+      decides SUBSET--SUM and runs in polynomial time.
 
-  (B) Information-flow bridge (the real “LR_read” content):
-      Every such polynomial-time Cook–Levin solver admits LR-read, i.e.
-      satisfies admits_LR_read_TM, exposing the canonical left/right
-      per-candidate structure required by the abstract lower bound.
+\item \emph{Information-flow bridge (the LR-read content).}
+      Every such polynomial-time Cook--Levin solver admits an LR-read
+      presentation, that is, it satisfies
+      \verb|admits_LR_read_TM| and therefore exposes the canonical
+      left/right per-candidate structure required to transfer the
+      abstract decision-tree lower bound.
+\end{itemize}
 
-NP membership is not part of LR_read; it is proved separately via the
-verifier construction in Section 5.
-›
+No NP-membership assumption is included in this hypothesis.
+Membership of SUBSET--SUM in \(\mathcal{NP}\) is established independently,
+via the verifier construction formalised earlier.
+\<close>
 
 definition LR_read_all_poly_solvers_hypothesis ::
   "(int list ⇒ int ⇒ string) ⇒ bool" where
@@ -369,18 +410,33 @@ definition LR_read_all_poly_solvers_hypothesis ::
         CL_SubsetSum_Solver M q0 enc ⟶ polytime_CL_machine M enc ⟶ 
         admits_LR_read_TM M q0 enc)"
 
-section ‹9. Core Conditional Theorem›
+section \<open>Core conditional theorem\<close>
 
-text ‹
-Core idea in one paragraph:
+text \<open>
+The core argument can be summarised in a single paragraph.
 
-Assume P = NP.  Since SUBSET–SUM is in NP, it would then be in P.
-So there would exist a polynomial-time Cook–Levin solver M.
-By LR_read, M admits LR-read.  But SubsetSum_CookLevin already proves that
-LR-read Cook–Levin solvers incur the Ω(√(2^n)) lower bound on a distinct family, 
-hence are not polynomial-time.  Contradiction.  Therefore ¬(P = NP). Equivalently: 
-the development proves LR_read_all_poly_solvers_hypothesis enc0 ⟹ ¬ P_eq_NP.
-›
+Assume \(\mathcal{P} = \mathcal{NP}\).
+Since SUBSET--SUM belongs to \(\mathcal{NP}\), it would then also belong to
+\(\mathcal{P}\).
+By the realisability component of
+\verb|LR_read_all_poly_solvers_hypothesis enc0|,
+there would therefore exist a polynomial-time Cook--Levin Turing machine
+\verb|M| that decides SUBSET--SUM.
+
+By the information-flow component of the same hypothesis, the machine
+\verb|M| admits an LR-read presentation.
+However, the development in \verb|SubsetSum_CookLevin| already establishes
+that any LR-read Cook--Levin solver for SUBSET--SUM incurs an
+\(\Omega(\sqrt{2^n})\) lower bound on a family of instances with
+\verb|distinct_subset_sums|, and hence cannot run in polynomial time.
+
+This contradiction shows that the assumptions cannot all hold simultaneously.
+Formally, the theory proves the implication
+\[
+  \verb|LR_read_all_poly_solvers_hypothesis enc0| \;\Longrightarrow\;
+  \neg (\mathcal{P} = \mathcal{NP}).
+\]
+\<close>
 
 lemma P_neq_NP_if_LR_read_all_poly_solvers_hypothesis:
   fixes enc0 :: "int list ⇒ int ⇒ string"
@@ -439,17 +495,32 @@ proof -
   qed
 qed
 
-section ‹10. Final Packaged Theorem›
+section \<open>Final packaged theorem\<close>
 
-text ‹
-Final packaged statement:
+text \<open>
+The final result can now be stated in a single packaged form.
 
-  If LR_read holds (for enc0) and you have an NP verifier for SUBSET–SUM (for enc0),
-  then ¬(P = NP).
+If the LR-read hypothesis holds for the instance encoding \verb|enc0|, and
+if SUBSET--SUM admits an NP verifier with respect to \verb|enc0|, then
+\[
+  \neg (\mathcal{P} = \mathcal{NP}).
+\]
 
-So the development isolates exactly one remaining “informational” point:
-whether polynomial-time SUBSET–SUM solvers must satisfy LR-read.
-›
+Equivalently, the development shows that the following assumptions are
+jointly inconsistent:
+
+\begin{itemize}
+\item SUBSET--SUM lies in \(\mathcal{NP}\) (witnessed by a verifier);
+\item every polynomial-time Cook--Levin solver for SUBSET--SUM admits an
+      LR-read presentation; and
+\item \(\mathcal{P} = \mathcal{NP}\).
+\end{itemize}
+
+Thus the entire argument isolates a single remaining informational question:
+whether polynomial-time SUBSET--SUM solvers must satisfy the LR-read
+information-flow condition.  All other components of the argument are
+fully formalised within Isabelle/HOL.
+\<close>
 
 theorem P_neq_NP_under_LR_read:
   fixes enc0 :: "int list ⇒ int ⇒ string"
